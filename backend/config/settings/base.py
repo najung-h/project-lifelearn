@@ -39,7 +39,6 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     # apps
     'apps.accounts',
-    'apps.users',
     'apps.community',
     'apps.courses', 
 
@@ -55,6 +54,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+AUTH_USER_MODEL = 'accounts.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
