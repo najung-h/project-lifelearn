@@ -444,3 +444,4 @@ pyrightconfig.json
 *.pem
 
 **/html_temp/
+**/.vscode/
