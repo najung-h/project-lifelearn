@@ -5,8 +5,8 @@
             <nav class="gnb">
                 <a href="#">이용방법</a>
                 <router-link to="/courses">강좌찾기</router-link>
-                <router-link to="/mypage">나의학습</router-link>
                 <router-link to="/community">커뮤니티</router-link>
+                <router-link to="/mypage">마이페이지</router-link>
             </nav>
             <div class="user-menu">
                 <router-link to="/login" class="btn btn-outline">로그인</router-link>
