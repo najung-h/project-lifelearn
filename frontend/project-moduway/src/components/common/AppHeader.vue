@@ -3,7 +3,7 @@
         <div class="container nav-wrapper">
             <router-link to="/" class="logo">LIFE-LEARN</router-link>
             <nav class="gnb">
-                <a href="#">이용방법</a>
+                <router-link to="/guide">이용방법</router-link>
                 <router-link to="/courses">강좌찾기</router-link>
                 <router-link to="/community">커뮤니티</router-link>
                 <router-link to="/mypage">마이페이지</router-link>

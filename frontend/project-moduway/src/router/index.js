@@ -3,6 +3,7 @@ import IndexPage from '@/pages/IndexPage.vue'
 import CourseListPage from '@/pages/CourseListPage.vue'
 import MyPage from '@/pages/MyPage.vue'
 import CommunityBoardPage from '@/pages/community/CommunityBoardPage.vue'
+import GuidePage from '@/pages/GuidePage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/community',
       name: 'community',
       component: CommunityBoardPage,
+    },
+    {
+      path: '/guide',
+      name: 'guide',
+      component: GuidePage,
     },
     // 다른 라우트들은 작업하면서 추가
   ],
