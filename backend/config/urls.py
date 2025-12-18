@@ -14,9 +14,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
+# backend/config/urls.py
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # REST API용 accounts 엔드포인트
+    path('api/v1/accounts/', include('apps.accounts.urls')),
+    # django-allauth가 내부적으로'만' 사용하는 URL들
+    # (socialaccount_login, socialaccount_signup 등 포함)
+    path('accounts/', include('allauth.urls')),
 ]
