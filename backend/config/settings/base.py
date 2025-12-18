@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'dj_rest_auth.registration',
 
     # django default apps
@@ -76,6 +77,7 @@ REST_FRAMEWORK = {
     # Authentication 토큰 기반 인증 사용
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication', # 소셜 로그인 처리를 위함
     ],
     # permission | 조회는 누구나, 변경은 인증된 사람만.
     'DEFAULT_PERMISSION_CLASSES': [
@@ -186,3 +188,17 @@ AUTHENTICATION_BACKENDS = (
     # 이메일 등 allauth 로그인
     "allauth.account.auth_backends.AuthenticationBackend",
 )
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'offline', # 엄밀한 보안을 따진다면 online으로 변경가능.
+        },
+    }
+}
+
+SOCIALACCOUNT_ADAPTER = 'apps.accounts.adapter.CustomSocialAccountAdapter'

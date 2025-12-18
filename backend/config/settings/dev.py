@@ -19,3 +19,6 @@ DATABASES = {
 # - SMTP 서버 설정 없이도 인증 메일 내용 및 링크 확인 가능
 # - 운영 환경에서는 SMTP 또는 외부 이메일 서비스로 교체 필요
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# 개발용: 이메일 인증 강제 해제 (API 테스트 편의)
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
