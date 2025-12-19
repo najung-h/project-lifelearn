@@ -165,8 +165,14 @@ class Scrap(models.Model):
         db_table = 'community_scrap'
         verbose_name = '스크랩'
         verbose_name_plural = '스크랩 목록'
-        unique_together = ('user', 'post')
         ordering = ['-created_at']
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'post'],
+                name='unique_user_post_scrap'
+            )
+        ]
 
     def __str__(self):
         return f'{self.user.username} scraps {self.post.title}'
