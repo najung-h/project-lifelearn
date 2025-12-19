@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/linux,python,pycharm,node
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,python,pycharm,node
 
+# macOS
+.DS_Store
+
 ### Linux ###
 *~
 
