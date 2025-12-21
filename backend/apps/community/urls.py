@@ -1,7 +1,35 @@
+# backend/apps/community/urls.py
+
 from django.urls import path
 from apps.community import views
 
 app_name = 'community'
+
+# 개요
+"""
+/api/v1/community/
+├── boards/
+│   └── /                               # GET: 전체 게시판 목록 조회 (+ posts_count)
+├── {board_id}/
+│   └── posts/                          # GET: 특정 게시판 게시글 목록 (ID 기준)
+│                                       # POST: 특정 게시판 게시글 생성
+├── {board_name}/
+│   └── posts/                          # GET: 특정 게시판 게시글 목록 (이름 기준)
+│                                       # POST: 특정 게시판 게시글 생성 (허용 시)
+├── posts/
+│   ├── {post_id}/                      # GET: 게시글 상세
+│   │                                   # PUT/PATCH: 게시글 수정
+│   │                                   # DELETE: 게시글 삭제
+│   ├── search/                         # GET: 게시글 검색 (?q=...&board_id=...)
+│   └── {post_id}/
+│       ├── comments/                   # GET: 댓글 목록(최상위) + 대댓글 트리
+│       │                               # POST: 댓글/대댓글 작성
+│       ├── comments/{comment_id}/      # GET: 댓글 단건 조회 (옵션)
+│       │                               # PUT/PATCH: 댓글 수정
+│       │                               # DELETE: 댓글 삭제
+│       ├── likes/                      # POST: 좋아요 토글
+│       └── scrap/                      # POST: 스크랩 토글
+"""
 
 urlpatterns = [
 
