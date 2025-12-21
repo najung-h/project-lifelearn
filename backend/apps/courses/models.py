@@ -10,6 +10,7 @@ class Course(models.Model):
     content_key = models.CharField(max_length=500, blank=True, null=True)
     professor = models.CharField(max_length=500, blank=True, null=True)  # 교수자
     org_name = models.CharField(max_length=100, blank=True, null=True)   # 운영기관(대학 등)
+    certificate_yn = models.CharField(max_length=1, blank=True, null=True) # 수료증 발급 여부
     
     # 분류
     classfy_name = models.CharField(max_length=100, blank=True, null=True)        # 대분류
