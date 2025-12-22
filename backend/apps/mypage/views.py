@@ -7,6 +7,7 @@ from rest_framework import status, generics
 # - Q: 복합 조건(AND/OR/NOT, 필터 조건 분기)에 사용
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
 
 from apps.courses.models import Course, Enrollment, Wishlist, CourseReview
 from apps.community.models import Post, Comment, Scrap
