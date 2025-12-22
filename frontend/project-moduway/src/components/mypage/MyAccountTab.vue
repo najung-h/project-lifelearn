@@ -1,39 +1,62 @@
 <template>
-  <div class="tab-content active">
-    <h3>내 계정</h3> 
-    <div class="account-info tab-section-container" style="border-bottom: none;">
-        <dl>
-            <dt>이름</dt><dd>김싸피</dd>
-            <dt>아이디</dt><dd>ssafy123</dd>
-            <dt>이메일</dt><dd>ssafy@email.com</dd>
-            <dt>가입일</dt><dd>2024.12.01</dd>
-            <dt>마케팅 수신</dt><dd style="color:green; font-weight:600;">동의</dd>
-        </dl>
-        <div class="link-box-right">
-            <a href="#" class="btn btn-outline">정보 수정</a>
-        </div>
+  <div class="my-account-tab">
+    <div v-if="profile">
+      <ProfileView
+        v-if="!isEditing"
+        :profile="profile"
+        @edit="isEditing = true"
+      />
+      <ProfileEditForm
+        v-else
+        :profile-data="profile"
+        @cancel="isEditing = false"
+        @save="handleProfileUpdate"
+      />
+    </div>
+    <div v-else class="loading">
+      <p>프로필 정보를 불러오는 중입니다...</p>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
+import ProfileView from './profile/ProfileView.vue';
+import ProfileEditForm from './profile/ProfileEditForm.vue';
+import { getProfile, updateProfile } from '@/api/mypage';
+
+const profile = ref(null);
+const isEditing = ref(false);
+
+onMounted(async () => {
+  try {
+    const response = await getProfile();
+    profile.value = response.data;
+  } catch (error) {
+    console.error('프로필 정보를 가져오는데 실패했습니다:', error);
+  }
+});
+
+const handleProfileUpdate = async (updatedProfile) => {
+  try {
+    const response = await updateProfile(updatedProfile);
+    profile.value = response.data;
+    isEditing.value = false;
+    // TODO: 성공/실패 토스트 메시지 표시
+  } catch (error) {
+    console.error('프로필 업데이트에 실패했습니다:', error);
+    // TODO: 에러 메시지 표시 (예: 이메일 중복)
+  }
+};
 </script>
 
 <style scoped>
-.tab-content { display: block; background-color: var(--bg-white); padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
-.tab-content h3 { font-size: 20px; font-weight: 700; color: var(--primary-dark); border-bottom: 2px solid var(--primary-light); padding-bottom: 10px; margin-bottom: 20px; }
-
-/* 섹션 컨테이너 */
-.tab-section-container { padding-bottom: 30px; border-bottom: 1px solid var(--section-separator); margin-bottom: 30px; }
-.tab-content > .tab-section-container:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-
-/* 계정 정보 */
-.account-info dl { display: grid; grid-template-columns: 120px 1fr; gap: 15px; padding-bottom: 20px; margin-bottom: 0; }
-.account-info dt { font-weight: 600; color: var(--text-sub); }
-.link-box-right { text-align: right; margin-top: 15px; }
-
-@media (max-width: 768px) {
-    .account-info dl { grid-template-columns: 1fr; gap: 5px; }
-    .account-info dt { margin-top: 10px; }
+.my-account-tab {
+  padding-top: 10px;
+}
+.loading {
+  text-align: center;
+  padding: 50px;
+  color: var(--text-sub);
 }
 </style>

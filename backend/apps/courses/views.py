@@ -90,5 +90,8 @@ class CourseRecommendationView(APIView):
             return Response(serializer.data)
 
         except Exception as e:
+            import traceback
             print(f"❌ ES 추천 로직 에러: {e}")
-            return Response([])
+            print(traceback.format_exc())
+            # 에러 발생 시 500 대신 빈 리스트 반환하여 프론트엔드 에러 방지
+            return Response([], status=status.HTTP_200_OK)
