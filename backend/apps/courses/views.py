@@ -1,8 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from rest_framework import generics
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.conf import settings
+from elasticsearch import Elasticsearch
 
-<<<<<<< Updated upstream
-# Create your views here.
-=======
 from .models import Course, CourseReview
 from .serializers import CourseDetailSerializer, CourseReviewSerializer
 from apps.mypage.serializers import SimpleCourseSerializer
@@ -94,4 +97,3 @@ class CourseRecommendationView(APIView):
             print(traceback.format_exc())
             # 에러 발생 시 500 대신 빈 리스트 반환하여 프론트엔드 에러 방지
             return Response([], status=200)
->>>>>>> Stashed changes
