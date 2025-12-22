@@ -1,13 +1,11 @@
-from django.shortcuts import render, get_object_or_404
-from django.conf import settings
-from rest_framework import generics, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from elasticsearch import Elasticsearch
+from django.shortcuts import render
 
-from .models import Course
-from .serializers import CourseDetailSerializer, CourseCardSerializer
+<<<<<<< Updated upstream
+# Create your views here.
+=======
+from .models import Course, CourseReview
+from .serializers import CourseDetailSerializer, CourseReviewSerializer
+from apps.mypage.serializers import SimpleCourseSerializer
 
 class CourseDetailView(generics.RetrieveAPIView):
     """
@@ -27,56 +25,73 @@ class CourseDetailView(generics.RetrieveAPIView):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
-    
+
+class CourseReviewListView(generics.ListAPIView):
+    """
+    [API]
+    - GET: /api/v1/courses/{course_id}/reviews/
+    """
+    serializer_class = CourseReviewSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        course_id = self.kwargs.get('course_id') # urls.py의 변수명과 일치해야 함 (보통 pk 또는 course_id)
+        # 만약 urls.py에서 <int:course_id>라고 썼다면 위처럼, <int:pk>라면 self.kwargs['pk']
+        # 안전하게 kwargs에서 가져옴
+        return CourseReview.objects.filter(course_id=course_id).select_related('user').order_by('-created_at')
+
+# 서버 시작 시 클라이언트 생성
+ES_CLIENT = Elasticsearch(getattr(settings, 'ELASTICSEARCH_URL', 'http://elasticsearch:9200'))
+
 class CourseRecommendationView(APIView):
-    """
-    [설계 의도]
-    - 현재 강좌의 embedding 벡터를 기준으로 Elasticsearch k-NN 검색 수행
-    - 가장 유사한 강좌 4개를 카드 형태 데이터로 반환
-    """
     def get(self, request, course_id):
-        # 1. 기준 강좌 조회
+        # 1. 기준 강좌 벡터 추출
         target_course = get_object_or_404(Course, id=course_id)
         query_vector = target_course.embedding
 
-        # 임베딩 데이터가 없는 경우 빈 리스트 반환
-        if not query_vector:
+        if query_vector is None:
             return Response([])
 
-        # 2. Elasticsearch 클라이언트 설정
-        # (Docker 환경이라면 보통 http://elasticsearch:9200)
-        es = Elasticsearch(getattr(settings, 'ELASTICSEARCH_URL', 'http://elasticsearch:9200'))
-
-        # 3. k-NN 쿼리 (가장 유사한 5개 추출, 본인 제외를 위해 5개)
-        query = {
-            "knn": {
-                "field": "embedding",
-                "query_vector": query_vector,
-                "k": 5,
-                "num_candidates": 100
-            },
-            "_source": ["id"]
-        }
-
         try:
-            # push_es.py에서 설정한 인덱스명(kmooc_courses) 사용
-            res = es.search(index="kmooc_courses", body=query)
+            # 2. 순수 k-NN 쿼리 (8.x 버전 스타일 키워드 인자 사용 권장)
+            # vector 필드가 'embedding'이고 dense_vector 타입이어야 함.
+            res = ES_CLIENT.search(
+                index="kmooc_courses",
+                knn={
+                    "field": "embedding",
+                    "query_vector": list(query_vector), # 벡터 리스트 변환
+                    "k": 5,
+                    "num_candidates": 200
+                },
+                source=["id"] # _source에는 id만 가져옴
+            )
             
-            # 4. 결과 ID 추출 (자기 자신은 제외)
-            hit_ids = [
-                int(hit["_source"]["id"]) 
-                for hit in res["hits"]["hits"] 
-                if int(hit["_source"]["id"]) != course_id
-            ][:4] # 최종 4개만 선택
+            # 3. 유사도 순서대로 ID 리스트 추출 (자기 자신은 필터링)
+            hits = res.get("hits", {}).get("hits", [])
+            hit_ids = []
+            for hit in hits:
+                source = hit.get("_source", {})
+                h_id = source.get("id")
+                # h_id가 있고, 현재 강좌 ID와 다르면 추가
+                if h_id is not None and int(h_id) != int(course_id):
+                    hit_ids.append(int(h_id))
+            
+            hit_ids = hit_ids[:4] # 최대 4개
 
-            # 5. DB 데이터 조회 및 직렬화
-            # 정렬 순서를 유지하기 위해 ID 리스트 순서대로 가져오기
-            recommended_courses = Course.objects.filter(id__in=hit_ids)
-            # 추천 순서를 보장하려면 추가 정렬 로직이 필요할 수 있으나, 일단 간단히 반환
-            serializer = CourseCardSerializer(recommended_courses, many=True)
+            # 4. DB 데이터 조회
+            course_queryset = Course.objects.filter(id__in=hit_ids)
             
+            # 5. 유사도 기준 내림차순 정렬 (DB 조회 시 순서가 섞이므로 재정렬)
+            course_map = {course.id: course for course in course_queryset}
+            sorted_courses = [course_map[cid] for cid in hit_ids if cid in course_map]
+
+            serializer = SimpleCourseSerializer(sorted_courses, many=True)
             return Response(serializer.data)
 
         except Exception as e:
-            # 운영 환경에서는 로깅 처리
-            return Response({"detail": str(e)}, status=500)
+            import traceback
+            print(f"❌ [Recommendation Error]: {str(e)}")
+            print(traceback.format_exc())
+            # 에러 발생 시 500 대신 빈 리스트 반환하여 프론트엔드 에러 방지
+            return Response([], status=200)
+>>>>>>> Stashed changes

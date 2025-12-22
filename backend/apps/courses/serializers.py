@@ -54,13 +54,15 @@ class CourseDetailSerializer(serializers.ModelSerializer):
         - 해당 강좌에 달린 수강평의 총 개수 반환
         """
         return CourseReview.objects.filter(course=obj).count()
-    
-class CourseCardSerializer(serializers.ModelSerializer):
+
+class CourseReviewSerializer(serializers.ModelSerializer):
     """
     [설계 의도]
-    - 추천 목록이나 검색 결과 등 '카드' 형태로 보여줄 때 사용
-    - summary 같은 무거운 필드를 제외하여 데이터 전송 효율 최적화
+    - 강좌 상세 페이지에서 보여줄 리뷰 목록용 시리얼라이저
+    - 작성자 이름(user_name)을 포함하여 UI에 표시
     """
+    user_name = serializers.CharField(source='user.name', read_only=True)
+
     class Meta:
-        model = Course
-        fields = ['id', 'name', 'org_name', 'professor', 'course_image', 'classfy_name']
+        model = CourseReview
+        fields = ['id', 'user_name', 'rating', 'review_text', 'created_at']

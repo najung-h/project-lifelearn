@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.community',
     'apps.courses', 
     'apps.mypage',
+    'apps.comparisons',
 
     # drf
     'rest_framework',

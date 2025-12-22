@@ -99,7 +99,9 @@ class SimpleCourseSerializer(serializers.ModelSerializer):
             'study_start',        # 학습 시작일
             'study_end',          # 학습 종료일
             'week',               # 총 학습 주차 수
-            'course_playtime'     # 총 강의 재생 시간
+            'course_playtime',    # 총 강의 재생 시간
+            'classfy_name',       # 대분류
+            'middle_classfy_name' # 중분류
         )
         read_only_fields = fields # 조회 전용
 

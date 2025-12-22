@@ -19,7 +19,7 @@ app_name = 'community'
 ├── posts/
 │   ├── {post_id}/                      # GET: 게시글 상세
 │   │                                   # PUT/PATCH: 게시글 수정
-│   │                                   # DELETE: 게시글 삭제
+
 │   ├── search/                         # GET: 게시글 검색 (?q=...&board_id=...)
 │   └── {post_id}/
 │       ├── comments/                   # GET: 댓글 목록(최상위) + 대댓글 트리
