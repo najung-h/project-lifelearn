@@ -19,3 +19,4 @@ kiwipiepy==0.22.2
 scikit-learn==1.8.0
 pandas==2.2.0 # numpy 버전과 호환 고려.
 joblib==1.5.3
+datetime==6.0
