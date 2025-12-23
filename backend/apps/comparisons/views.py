@@ -11,6 +11,9 @@
 3. 리뷰 요약 생성
 3.1 CourseReviewSummaryView    | 강좌 리뷰 요약 생성 API
 
+4. 감성분석 API
+4.1 CourseSentimentView        | 강좌 감성분석 조회 API
+
 [구조]
 1.1 ComparisonAnalyzeView
   1) 요청 검증 `ComparisonAnalyzeRequestSerializer` 사용
@@ -68,7 +71,9 @@ from apps.comparisons.serializers import (
     ComparisonAnalyzeResponseSerializer,
     ComparisonResultSerializer,
     CourseAIReviewDetailSerializer,
-    ReviewSummarySerializer
+    ReviewSummarySerializer,
+    SentimentResultSerializer
+
 )
 from apps.comparisons.services import (
     get_sentiment_service,
@@ -402,5 +407,75 @@ class CourseReviewSummaryView(APIView):
 
         return Response(
             serializer.data,
+            status=status.HTTP_200_OK
+        )
+    
+# =========================
+# 4. 감성분석 API
+# =========================
+
+# 4.1 CourseSentimentView | 강좌 감성분석 조회 API
+class CourseSentimentView(APIView):
+    """
+    [API]
+    - GET: /api/v1/comparisons/courses/{course_id}/sentiment/
+
+    [설계 의도]
+    - 특정 강좌의 리뷰 감성분석 결과만 독립적으로 조회
+    - POST /analyze/ 에서 사용하는 동일한 Service Layer 재사용
+    - 프론트엔드에서 강좌 상세 페이지 등에서 개별 호출 가능
+
+    [상세 고려사항]
+    - 인증 불필요 (AllowAny) - 공개 정보
+    - 강좌가 없으면 404 반환
+    - 리뷰가 없어도 200 반환 (기본값)
+      - positive_ratio: 0.0
+      - review_count: 0
+      - reliability: 'low'
+    - Service Layer 호출만 담당 (비즈니스 로직 분리)
+    """
+
+    permission_classes = [AllowAny]    # courses/ 강좌 상세 페이지에서 비로그인 사용자도 접근 가능해야 함.
+
+    def get(self, request, course_id):
+        """
+        강좌 리뷰 감성분석 조회
+
+        [처리 흐름]
+        1. 강좌 존재 여부 확인
+        2. SentimentService 인스턴스 가져오기
+        3. analyze_course_reviews(course_id) 호출
+        4. 결과 직렬화 (SentimentResultSerializer)
+        5. 응답 반환
+        """
+        # 1. 강좌 존재 여부 확인
+        course = get_object_or_404(Course, pk=course_id)
+
+        # 2. SentimentService 인스턴스 가져오기 (싱글톤)
+        sentiment_service = get_sentiment_service()
+
+        # 3. 감성분석 수행
+        # - Service가 DB 조회 + processor 호출 + 통계 가공 담당
+        # - 리뷰가 없으면 _get_default_result() 반환
+        try:
+            sentiment_result = sentiment_service.analyze_course_reviews(course_id)
+        except Exception as e:
+            # Service 호출 실패 시 로깅 후 기본값 반환
+            logger.error(
+                f'리뷰 감성분석 실패 (Course {course_id}): {e}',
+                exc_info=True
+            )
+            sentiment_result = {
+                'positive_ratio': 0.0,
+                'review_count': 0,
+                'reliability': 'low'
+            }
+
+        # 4. 응답 직렬화
+        response_serializer = SentimentResultSerializer(sentiment_result)
+
+        # 5. 응답 반환
+        return Response(
+            response_serializer.data,
             status=status.HTTP_200_OK
         )

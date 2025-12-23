@@ -14,18 +14,21 @@
     └── {course_id}/
         └── ai-review/                    # GET: 강좌 AI 평가 상세 조회
         └── review-summary/              # GET: 강좌 리뷰 요약 조회
+        └── sentiment/                    # GET: 강좌 감성분석 조회
 ```
 
 - /api/v1/comparisons/analyze/ - 강좌 비교 분석
 - /api/v1/comparisons/courses/<int:course_id>/ai-review/ - AI 평가 조회
 - /api/v1/comparisons/courses/<int:course_id>/review-summary/ - 강좌 리뷰 요약 조회
+- /api/v1/comparisons/courses/<int:course_id>/sentiment/ - 강좌 감성분석 조회
 """
 
 from django.urls import path
 from .views import (
     ComparisonAnalyzeView,
     CourseAIReviewDetailView,
-    CourseReviewSummaryView
+    CourseReviewSummaryView,
+    CourseSentimentView
 )
 
 app_name = 'comparisons'
@@ -51,4 +54,11 @@ urlpatterns = [
         CourseReviewSummaryView.as_view(),
         name='course-review-summary'
     ), 
+
+    # 강좌 감성분석 조회
+    path(
+        'courses/<int:course_id>/sentiment/',
+        CourseSentimentView.as_view(),
+        name='course-sentiment'
+    ),
 ]
