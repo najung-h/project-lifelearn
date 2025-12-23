@@ -181,6 +181,7 @@ class PostSearchView(generics.ListAPIView):
     [상세고려사항]
     - 제목/내용 기준 부분 검색
     - 게시판 필터(board_id)는 선택 사항
+    - 정규화 수행 (공백 제거, 키워드 분리)
     """
     serializer_class = PostListSerializer
     permission_classes = []  # 누구나 검색 가능
@@ -193,27 +194,39 @@ class PostSearchView(generics.ListAPIView):
         [상세고려사항]
         - 검색어가 없을 경우 전체 게시글 반환
         - annotate를 통해 집계 필드 사전 계산
-        """
-        query = self.request.query_params.get('q', '')
-        # ↑ ?q=키워드 로 들어온 검색어, 없으면 빈 문자열
-        board_id = self.request.query_params.get('board_id', None)
-        # ↑ ?board_id=... 로 게시판 필터(선택)
 
+        [로직 개선]
+        1. 검색어 앞뒤 공백 제거 (strip)
+        2. board_id가 숫자인지 확인 (isdigit)
+        3. 검색어를 공백 기준으로 쪼개서(split) AND 조건으로 검색 (검색 정규화)
+        """
+        # 1. 입력값 가져오기 및 1차 정규화 (공백 제거)
+        query = self.request.query_params.get('q', '').strip()
+        board_id = self.request.query_params.get('board_id')
+
+        # 2. 기본 queryset 준비
         queryset = Post.objects.select_related('author', 'board').annotate(
             likes_count=Count('likes'),
             comments_count=Count('comments', filter=Q(comments__parent=None))
         )
 
-        # 게시판 필터
-        if board_id:
+        # 3. 게시판 필터링 (유효성 검증 추가)
+        # board_id가 존재하고, 실제로 숫자로만 구성되어 있을 때만 필터 적용
+        if board_id and board_id.isdigit():
             queryset = queryset.filter(board_id=board_id)
 
-        # 검색어 필터 (제목 또는 내용에서 검색)
+        # 4. 검색어 필터링 (다중 키워드 처리 정규화)
         if query:
-            queryset = queryset.filter(
-                Q(title__icontains=query) | Q(content__icontains=query)
-                # ↑ icontains: 대소문자 무시 부분 일치
-            )
+            # "파이썬 장고" 입력 시 -> ['파이썬', '장고'] 로 분리
+            keywords = query.split()
+            
+            # 모든 키워드가 포함된 게시글을 찾기 위한 Q 객체 생성 (AND 조건)
+            # 하나라도 포함되면 되는 OR 조건을 원하면 아래 &= 를 |= 로 변경
+            search_filter = Q()
+            for keyword in keywords:
+                search_filter &= (Q(title__icontains=keyword) | Q(content__icontains=keyword))
+            
+            queryset = queryset.filter(search_filter)
 
         return queryset.order_by('-created_at') # 최신순
 
