@@ -2,10 +2,41 @@
 
 import os
 import joblib
+import time
 import json
 from pathlib import Path
 from typing import Dict, List, Union
 import logging
+
+# SentimentProcessor 메서드 정리
+"""
+# 1. 외부 사용
+                   - 1.1    analyze                      |  단일 텍스트 감성분석
+                   - 1.2    analyze_batch                |  다수 텍스트에 대한 감성분석
+                   - 1.3    get_model_info               |  모델 메타데이터 및 로드 상태 조회
+
+# 2. 내부 사용
+                   - 2.1    _load_model                  |  감성분석 모델 및 메타데이터 로드
+                   - 2.2    _default_result              | 분석 실패/빈 입력 시 기본 결과 반환
+
+# 3. 싱글톤 제어
+                   - 3.1    __new__                      |  싱글톤 인스턴스 생성 제어
+                   - 3.2    __init__                     |  최초 1회 모델 로드
+
+# 4. 헬퍼 함수
+                   - 4.1    get_sentiment_processor      |  싱글톤 인스턴스 반환
+"""
+
+
+# 출력형식
+"""
+{
+    'label': 'positive' | 'negative' | 'neutral',
+    'positive_prob': 0.85,
+    'negative_prob': 0.15,
+    'confidence': 0.70
+}
+"""
 
 logger = logging.getLogger(__name__)
 
@@ -239,6 +270,25 @@ class SentimentProcessor:
             'is_loaded': self._pipeline is not None,
             'classes': list(self._pipeline.classes_) if self._pipeline else []
         }
+    
+    def analyze_with_timing(self, text:str) -> Dict:
+        """
+        [설계 의도]
+        - 추론 시간을 함께 반환하여 성능 모니터링 가능
+        
+        [상세 고려사항]
+        - 프로덕션 환경에서 응답 시간 측정 용도
+        - 병목 구간 파악에 도움
+        """
+        start_time = time.time()
+        result = self.analyze(text)
+        elapsed_time = time.time() - start_time
+
+        return {
+            **result,
+            'inference_time_ms': round(elapsed_time * 1000, 2)  # 밀리초 단위
+        }
+
 
 
 def get_sentiment_processor() -> SentimentProcessor:

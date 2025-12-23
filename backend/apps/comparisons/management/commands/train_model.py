@@ -1,5 +1,34 @@
 # apps/comparisons/management/commands/train_model.py
 
+"""
+**강의 도메인의!!!!**
+한국어 리뷰 데이터로 감성분석 모델 학습 및 저장
+
+[학습 파이프라인]
+csv 데이터 -> 전처리(Kiwi 토크나이저) -> 특징 생성(TF-IDF) -> 모델 학습(LogisticRegression) -> 평가 -> 저장(joblib + metadata json)
+
+[CLI 옵션]
+```
+python manage.py train_model \
+  --data fixtures/sentiment_training_data.csv \
+  --test-size 0.2 \
+  --min-df 3 \
+  --ngram 2 \
+  --C 1.0 \
+  --cv 5
+```
+
+[출력 파일]
+- sentiment_pipeline.joblib : 학습된 파이프라인 (전처리 + 모델)
+- model_metadata.json : 모델 메타데이터 (버전, 정확도, 하이퍼파라미터 등) -> mlops 관리 목적
+
+[#TODO]
+- 모델 성능 모니터링 및 재학습 파이프라인 구축 고려
+"""
+
+
+
+
 import os
 import json
 import joblib

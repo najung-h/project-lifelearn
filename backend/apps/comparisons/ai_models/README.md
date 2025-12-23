@@ -63,10 +63,15 @@ apps/comparisons/
 │   └── commands/
 │       ├── train_model.py            # 모델 학습 커맨드
 │       └── evaluate_model.py         # 모델 평가 커맨드
+│       └── update_sentiment_model.py # 모델 갱신 
 │
 ├── fixtures/
 │   ├── sentiment_training_data.csv   # 초기 학습용 더미 데이터
 │   └── sentiment_test_data.csv       # 테스트용 데이터
+│
+├── evaluation_results/                # 평가 결과 JSON
+│   ├── evaluation_20251223_140530.json
+│   └── evaluation_20251225_093045.json
 │
 └── tests/
     └── test_sentiment.py             # 감성분석 테스트
@@ -98,3 +103,43 @@ apps/comparisons/
 # TODO
 - 캐싱 추가
 - `apps/comparisons/tasks.py` 비동기처리(Celery) 추가 고려
+
+- 사용법
+```bash
+# 기본 학습
+python manage.py train_model
+
+# 커스텀 옵션으로 학습
+python manage.py train_model \
+  --data fixtures/custom_data.csv \
+  --test-size 0.3 \
+  --min-df 5 \
+  --ngram 2 \
+  --C 0.5 \
+  --cv 10
+```
+
+- 학습 데이터 형식(`sentiment_training_data.csv`)
+```txt
+content,label
+"강의가 정말 유익하고 재미있었습니다.",positive
+"내용이 너무 어렵고 이해가 안 돼요.",negative
+"교수님 설명이 명확해서 좋았어요.",positive
+```
+
+- 모델 평가
+```bash
+# 기본 평가
+python manage.py evaluate_model
+
+# 새 테스트 데이터로 평가
+python manage.py evaluate_model \
+  --test-data fixtures/new_test.csv \
+  --verbose
+
+# 특정 모델 버전 평가
+python manage.py evaluate_model \
+  --model-path ai_models/v2.0/sentiment_pipeline.joblib \
+  --output results/v2_evaluation.json
+```
+
