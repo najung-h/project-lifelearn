@@ -89,13 +89,10 @@ const mainCategories = [
   { value: 'arts_pe', label: '예체능' },
   { value: 'convergence', label: '융·복합' },
   { value: 'etc', label: '기타' },
-  { value: 'notice', label: '공지사항' },
 ];
 
 const handleMainCategoryChange = () => {
-  if (form.value.mainCategory === 'notice') {
-    form.value.subCategory = '';
-  }
+  // 공지사항 제거로 인해 로직 필요 없음
 };
 
 const handleSubmit = async () => {

@@ -96,13 +96,13 @@ const typeMap = {
 
 const getBoardKoreanName = (boardName) => {
   if (!boardName) return '';
-  if (boardName === 'notice') return '공지/운영';
-  
+  if (boardName === 'notice') return '공지사항';
+
   const parts = boardName.split('_');
   if (parts.length === 2) {
     const cat = categoryMap[parts[0]] || parts[0];
     const type = typeMap[parts[1]] || parts[1];
-    return `${cat} - ${type}`;
+    return `${cat}-${type}`;
   }
   return boardName;
 };
@@ -243,17 +243,19 @@ onMounted(() => {
     font-weight: 800;
     line-height: 1.4;
     margin-bottom: 10px;
+    margin-top: 0;
 }
 
 .post-category-tag {
     display: inline-block;
     background-color: var(--primary-light);
     color: var(--primary-dark);
-    padding: 4px 10px;
+    padding: 6px 12px;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    margin-left: -6px;
 }
 
 /* 2. 작성자 및 메타 정보 */

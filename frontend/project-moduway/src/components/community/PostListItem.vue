@@ -1,6 +1,6 @@
 <template>
   <tr>
-    <td class="col-no">{{ post.id }}</td>
+    <td class="col-no">{{ virtualId }}</td>
     <td class="col-type">{{ getBoardKoreanName(post.board_name) }}</td>
     <td class="col-title">
       <router-link :to="`/community/posts/${post.id}`">
@@ -20,6 +20,10 @@
 const props = defineProps({
   post: {
     type: Object,
+    required: true
+  },
+  virtualId: {
+    type: Number,
     required: true
   }
 });
@@ -44,7 +48,7 @@ const getBoardKoreanName = (boardName) => {
   if (parts.length === 2) {
     const cat = categoryMap[parts[0]] || parts[0];
     const type = typeMap[parts[1]] || parts[1];
-    return `${cat} - ${type}`;
+    return `${cat}-${type}`;
   }
   return boardName;
 };
@@ -70,7 +74,7 @@ td {
 }
 
 .col-no { width: 8%; color: var(--text-sub); }
-.col-type { width: 15%; font-weight: 600; color: var(--primary-dark); }
+.col-type { width: 15%; color: var(--primary-dark); font-size: 0.85rem; }
 .col-title { 
   text-align: left; 
   padding-left: 15px; 

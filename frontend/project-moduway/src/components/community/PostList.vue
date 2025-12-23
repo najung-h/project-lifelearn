@@ -1,3 +1,22 @@
+<script setup>
+import PostListItem from './PostListItem.vue';
+
+const props = defineProps({
+  posts: {
+    type: Array,
+    default: () => []
+  },
+  totalCount: {
+    type: Number,
+    default: 0
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  }
+});
+</script>
+
 <template>
   <div class="post-list-container">
     <div v-if="loading" class="loading-state">
@@ -22,29 +41,15 @@
           </td>
         </tr>
         <PostListItem 
-          v-for="post in posts" 
+          v-for="(post, index) in posts" 
           :key="post.id" 
           :post="post" 
+          :virtual-id="totalCount - index"
         />
       </tbody>
     </table>
   </div>
 </template>
-
-<script setup>
-import PostListItem from './PostListItem.vue';
-
-defineProps({
-  posts: {
-    type: Array,
-    default: () => []
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  }
-});
-</script>
 
 <style scoped>
 .post-list-container {

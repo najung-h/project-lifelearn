@@ -25,7 +25,7 @@
           {{ boardDescription }}
         </div>
         
-        <PostList :posts="posts" :loading="loading" />
+        <PostList :posts="posts" :total-count="totalCount" :loading="loading" />
         
         <div class="pagination">
           <a href="#">&lt;&lt;</a>
@@ -55,6 +55,7 @@ const currentBoardId = ref(null);
 const isAllSearch = ref(true);
 const searchQuery = ref('');
 const posts = ref([]);
+const totalCount = ref(0);
 const loading = ref(false);
 
 const searchPlaceholder = computed(() => {
@@ -81,9 +82,10 @@ const fetchPosts = async (boardId = null) => {
     // DRF Pagination 처리
     if (response.data.results) {
         posts.value = response.data.results;
-        // TODO: response.data.count, next, previous 처리 (페이지네이션 UI 연동 시)
+        totalCount.value = response.data.count;
     } else {
         posts.value = response.data;
+        totalCount.value = response.data.length;
     }
   } catch (error) {
     console.error('게시글 목록 조회 실패:', error);
