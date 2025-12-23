@@ -5,6 +5,14 @@ from .views import (
     CourseRecommendationView
 )
 
+# 개요
+"""
+/api/v1/courses/
+├── <int:pk>/                       # 강좌 상세
+├── <int:course_id>/reviews/        # 리뷰 목록
+└── <int:course_id>/recommendations/ # 추천 강좌
+"""
+
 urlpatterns = [
     # 1. 강의 상세 정보 조회: /api/v1/courses/<id>/
     path('<int:pk>/', CourseDetailView.as_view(), name='course-detail'),

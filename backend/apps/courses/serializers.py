@@ -2,6 +2,13 @@ from rest_framework import serializers
 from django.db.models import Avg
 from apps.courses.models import Course, Wishlist, CourseReview
 
+# 개요
+"""
+1.1 CourseDetailSerializer | 강의 상세 정보 시리얼라이저
+1.2 CourseReviewSerializer | 강의 리뷰 목록 시리얼라이저
+"""
+
+# 1.1 CourseDetailSerializer | 강의 상세 정보 시리얼라이저
 class CourseDetailSerializer(serializers.ModelSerializer):
     """
     [설계 의도]
@@ -55,6 +62,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
         """
         return CourseReview.objects.filter(course=obj).count()
 
+# 1.2 CourseReviewSerializer | 강의 리뷰 시리얼라이저
 class CourseReviewSerializer(serializers.ModelSerializer):
     """
     [설계 의도]

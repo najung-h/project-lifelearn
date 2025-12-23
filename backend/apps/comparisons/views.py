@@ -455,6 +455,7 @@ class CourseSentimentView(APIView):
         sentiment_service = get_sentiment_service()
 
         # 3. 감성분석 수행
+        # 기존에 구현된 analyze_course_reviews 재사용
         # - Service가 DB 조회 + processor 호출 + 통계 가공 담당
         # - 리뷰가 없으면 _get_default_result() 반환
         try:
@@ -472,6 +473,7 @@ class CourseSentimentView(APIView):
             }
 
         # 4. 응답 직렬화
+        # 기존 serializers.py에 있는 SentimentResultSerializer를 그대로 사용
         response_serializer = SentimentResultSerializer(sentiment_result)
 
         # 5. 응답 반환

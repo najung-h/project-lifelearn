@@ -10,6 +10,15 @@ from .models import Course, CourseReview
 from .serializers import CourseDetailSerializer, CourseReviewSerializer
 from apps.mypage.serializers import SimpleCourseSerializer
 
+# 개요
+"""
+1.1 CourseDetailView | 강의 상세 정보 조회
+1.2 CourseReviewListView | 강의 리뷰 목록 조회
+1.3 CourseRecommendationView | 추천 강의 조회
+"""
+
+
+# 1.1 CourseDetailView | 강의 상세 정보 조회
 class CourseDetailView(generics.RetrieveAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseDetailSerializer
@@ -20,6 +29,7 @@ class CourseDetailView(generics.RetrieveAPIView):
         context.update({"request": self.request})
         return context
 
+# 1.2 CourseReviewListView | 강의 리뷰 목록 조회
 class CourseReviewListView(generics.ListAPIView):
     serializer_class = CourseReviewSerializer
     permission_classes = [AllowAny]
