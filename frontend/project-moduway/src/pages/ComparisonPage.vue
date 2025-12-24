@@ -4,118 +4,168 @@
     <main class="main-grid">
       <!-- Left Sidebar -->
       <div class="col-sidebar">
-        <AnalysisSidebar 
-          v-model:settings="settings" 
+        <AnalysisSidebar
+          v-model:settings="settings"
+          :is-analyzing="isAnalyzing"
           @analyze="runAnalysis"
         />
       </div>
 
       <!-- Right Content -->
       <div class="col-content">
-        <AnalysisResultList 
+        <AnalysisResultList
           :results="sortedResults"
-          :ai-comment="aiComment"
-          :criteria="settings.criteria"
+          :personalized-comments="personalizedComments"
           :is-analyzed="hasRunAnalysis"
+          :is-loading="isAnalyzing"
         />
       </div>
     </main>
+
+    <!-- 하단바 (ComparisonPage 전용) -->
+    <ComparisonBar @analyze="runAnalysis" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useComparisonStore } from '@/stores/comparison';
+import { analyzeComparison } from '@/api/comparison';
 import AnalysisSidebar from '@/components/comparison/AnalysisSidebar.vue';
 import AnalysisResultList from '@/components/comparison/AnalysisResultList.vue';
+import ComparisonBar from '@/components/comparison/ComparisonBar.vue';
 
 const comparisonStore = useComparisonStore();
 const hasRunAnalysis = ref(false);
+const isAnalyzing = ref(false);
 
 // --- 상태 (Settings) ---
 const settings = ref({
   weeklyHours: 12,
-  userGoal: "비전공자이지만 데이터 분석 역량을 키워 이직하고 싶습니다.",
-  stylePref: 70, // 이론 vs 실습
-  criteria: [
-    { key: "practical", label: "실무 활용도", weight: 40 },
-    { key: "theory", label: "이론적 깊이", weight: 20 },
-    { key: "difficulty", label: "학습 난이도", weight: 20 },
-    { key: "trend", label: "최신 트렌드", weight: 20 }
-  ]
-});
-
-const maxTotalWeight = 100;
-const aiComment = ref("보유하신 역량을 활용할 수 있으면서도 실무 비중이 높은 과정을 우선 추천드립니다.");
-
-// --- 가상 데이터 생성기 (백엔드 API 대용) ---
-// 실제로는 comparisonStore.items에 있는 강좌에 분석 데이터를 입혀야 함
-const enrichedCourses = ref([]);
-
-const generateMockAnalysis = (course) => {
-  // 강좌 ID를 시드로 사용하여 고정된 랜덤값 생성 (새로고침해도 점수 유지되도록)
-  const seed = course.id * 12345; 
-  const rand = (mod) => (seed % mod); // 단순 모의 랜덤
-
-  return {
-    ...course,
-    // 없는 필드 채우기
-    orgName: course.university || course.org_name || "교육기관",
-    name: course.title || course.name || "강좌명",
-    minHoursPerWeek: 4 + (course.id % 10),
-    reviewCount: course.id * 3 + 2, // 일부는 데이터 부족(10미만) 나오게
-    sentiment: 70 + (course.id % 25),
-    reviewSummary: (course.id % 2 === 0) 
-      ? "기초부터 탄탄하게 잡아주지만 과제가 다소 많아 가용 시간이 충분해야 합니다."
-      : "입문자용으로 적합하며 가볍게 트렌드를 파악하기 좋으나 깊이는 다소 아쉽습니다.",
-    scores: {
-      practical: 50 + (course.id * 7 % 50),
-      theory: 50 + (course.id * 3 % 50),
-      difficulty: 30 + (course.id * 5 % 60),
-      trend: 60 + (course.id * 2 % 40),
-    }
-  };
-};
-
-// 초기화: 스토어의 아이템을 가져와서 분석 데이터 입힘
-onMounted(() => {
-  if (comparisonStore.items.length === 0) {
-    // 테스트용 더미 데이터 (비교함이 비어있을 때 보여주기 위함)
-    enrichedCourses.value = [
-      generateMockAnalysis({ id: 101, title: '파이썬 데이터 분석', university: '서울대학교' }),
-      generateMockAnalysis({ id: 102, title: '핀테크 입문', university: 'K-MOOC' }),
-    ];
-  } else {
-    enrichedCourses.value = comparisonStore.items.map(generateMockAnalysis);
+  userGoal: "비전공자이지만 데이터 분석 역량을 키워 이직하고 싶습니다. 파이썬 기초는 있지만 실무 경험은 없어서 프로젝트 위주의 강좌를 선호합니다.",
+  userPreferences: {
+    theory: 3,       // 0-5
+    practical: 4,
+    difficulty: 2,
+    duration: 3
   }
 });
 
-// --- 로직 (Computed) ---
+// 분석 결과 저장
+const analysisResults = ref([]);
 
-const remainingPoints = computed(() => {
-  const currentTotal = settings.value.criteria.reduce((s, cr) => s + cr.weight, 0);
-  return maxTotalWeight - currentTotal;
+// AI 개인화 코멘트 목록
+const personalizedComments = computed(() => {
+  return analysisResults.value.map(result => result.personalized_comment);
 });
 
+// --- 백엔드 응답 → 프론트엔드 형식으로 변환 ---
+const mapBackendResponse = (backendData) => {
+  return backendData.map(item => {
+    // AI 평가 점수 1-5 → 0-100 변환
+    const scaleRating = (rating) => ((rating - 1) / 4) * 100;
+
+    return {
+      // 강좌 기본 정보
+      id: item.course.id,
+      name: item.course.name,
+      orgName: item.course.org_name,
+      professor: item.course.professor,
+      courseImage: item.course.course_image,
+      url: item.course.url,
+      studyEnd: item.course.study_end,
+      week: item.course.week,
+      coursePlaytime: item.course.course_playtime,
+
+      // 매칭 점수 (백엔드에서 이미 0-100)
+      totalScore: item.match_score,
+
+      // 타임라인 정보
+      minHoursPerWeek: item.timeline.min_hours_per_week,
+      totalWeeks: item.timeline.total_weeks,
+      remainingWeeks: item.timeline.remaining_weeks,
+      timelineStatus: item.timeline.status,
+      timelineRatio: item.timeline.ratio,
+
+      // 감성분석 정보
+      sentiment: item.sentiment.positive_ratio,
+      reviewCount: item.sentiment.review_count,
+      reliability: item.sentiment.reliability,
+
+      // AI 평가 (1-5 → 0-100 변환)
+      courseSummary: item.ai_review.course_summary,
+      scores: {
+        theory: scaleRating(item.ai_review.theory_rating),
+        practical: scaleRating(item.ai_review.practical_rating),
+        difficulty: scaleRating(item.ai_review.difficulty_rating),
+        duration: scaleRating(item.ai_review.duration_rating)
+      },
+
+      // 리뷰 요약
+      reviewSummary: item.review_summary.review_summary.summary,
+      reviewPros: item.review_summary.review_summary.pros,
+      reviewCons: item.review_summary.review_summary.cons,
+      reviewWarning: item.review_summary.warning_message,
+
+      // AI 맞춤 코멘트
+      personalized_comment: item.personalized_comment
+    };
+  });
+};
+
+// 정렬된 결과 (매칭 점수 기준)
 const sortedResults = computed(() => {
-  const totalWeight = settings.value.criteria.reduce((s, cr) => s + cr.weight, 0);
-  
-  return enrichedCourses.value.map(c => {
-    // 가중 평균 점수 계산
-    const weightedSum = settings.value.criteria.reduce((s, cr) => {
-      return s + (c.scores[cr.key] * cr.weight);
-    }, 0);
-    
-    // 100점 만점 환산
-    const finalScore = totalWeight > 0 ? (weightedSum / (totalWeight * 100)) * 100 : 0;
-    
-    return { ...c, totalScore: finalScore };
-  }).sort((a, b) => b.totalScore - a.totalScore); // 점수 높은 순 정렬
+  // 백엔드에서 이미 정렬되어 오지만, 안전을 위해 한번 더 정렬
+  return [...analysisResults.value].sort((a, b) => b.totalScore - a.totalScore);
 });
 
-const runAnalysis = () => {
-  alert("AI 분석 엔진이 설정을 바탕으로 정밀 분석을 시작합니다...");
-  hasRunAnalysis.value = true;
+const runAnalysis = async () => {
+  if (isAnalyzing.value) return;
+
+  isAnalyzing.value = true;
+
+  try {
+    // 백엔드 API 호출을 위한 파라미터 구성
+    const params = {
+      course_ids: comparisonStore.items.map(item => item.id),
+      weekly_hours: settings.value.weeklyHours,
+      user_preferences: settings.value.userPreferences,
+      user_goal: settings.value.userGoal
+    };
+
+    console.log('📤 API 요청:', params);
+
+    // API 호출
+    const response = await analyzeComparison(params);
+
+    console.log('📥 API 응답:', response.data);
+
+    // 응답 데이터 변환 및 저장
+    analysisResults.value = mapBackendResponse(response.data.results);
+
+    hasRunAnalysis.value = true;
+
+    // 성공 알림
+    alert("AI 분석이 완료되었습니다!");
+
+  } catch (error) {
+    console.error('❌ API 호출 실패:', error);
+
+    // 에러 상세 정보 출력
+    if (error.response) {
+      console.error('응답 에러:', error.response.data);
+      alert(`분석 중 오류가 발생했습니다.\n${error.response.data.detail || '서버 오류'}`);
+    } else if (error.request) {
+      console.error('요청 에러:', error.request);
+      alert('서버와 통신할 수 없습니다. 네트워크 연결을 확인해주세요.');
+    } else {
+      console.error('에러:', error.message);
+      alert(`오류가 발생했습니다: ${error.message}`);
+    }
+
+  } finally {
+    isAnalyzing.value = false;
+  }
 };
 </script>
 

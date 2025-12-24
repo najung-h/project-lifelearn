@@ -33,9 +33,9 @@
 
         <div class="actions">
           <button class="btn-clear" @click="comparisonStore.clear">비우기</button>
-          <router-link to="/comparisons" class="btn-compare">
+          <button class="btn-compare" @click="$emit('analyze')">
             AI 분석 시작
-          </router-link>
+          </button>
         </div>
 
       </div>
@@ -47,6 +47,7 @@
 import { useComparisonStore } from '@/stores/comparison';
 
 const comparisonStore = useComparisonStore();
+const emit = defineEmits(['analyze']);
 </script>
 
 <style scoped>
