@@ -54,7 +54,8 @@ const props = defineProps({
 });
 
 const authStore = useAuthStore();
-const isLoggedIn = computed(() => authStore.isAuthenticated.value);
+// Pinia getter는 자동 언래핑되므로 .value 제거
+const isLoggedIn = computed(() => authStore.isAuthenticated);
 
 const reviews = ref([]);
 const showModal = ref(false);

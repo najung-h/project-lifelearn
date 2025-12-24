@@ -23,13 +23,14 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-// 반응형 참조를 직접 변수로 할당 (템플릿에서 자동 언래핑됨)
-const isAuthenticated = authStore.isAuthenticated;
+// 반응형 참조 유지 (Pinia)
+const { isAuthenticated } = storeToRefs(authStore);
 
 const handleLogout = async () => {
     await authStore.logout();
