@@ -3,11 +3,8 @@ from .views import (
     CourseDetailView, 
     CourseReviewListView, 
     CourseRecommendationView,
-<<<<<<< Updated upstream
-    CourseListView
-=======
-    CourseSemanticSearchView
->>>>>>> Stashed changes
+    CourseListView,
+    CourseSemanticSearchView,
 )
 
 # 개요

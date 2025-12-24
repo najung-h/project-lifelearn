@@ -13,6 +13,7 @@ cryptography
 pgvector==0.4.2
 elasticsearch==8.11.1
 numpy==1.26.4
+django-filter
 
 # 비교함
 kiwipiepy==0.22.2
