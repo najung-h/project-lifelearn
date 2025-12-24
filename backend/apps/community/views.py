@@ -1,7 +1,8 @@
 # backend/apps/community/views.py
 
 from django.shortcuts import get_object_or_404
-from django.db.models import Q, Count # Q : 복잡한 조회 조건을 조합할 때 사용, Count : 집계 함수
+from django.db.models import Q, Count, Exists, Subquery, OuterRef, Prefetch, Value, BooleanField # Q : 복잡한 조회 조건을 조합할 때 사용, Count : 집계 함수
+from django.db.models.functions import Coalesce
 from rest_framework import generics, status # generics : 제네릭 뷰 제공, status : HTTP 상태 코드
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
@@ -13,7 +14,7 @@ from .serializers import (
     CommentSerializer, ScrapSerializer
 )
 from .permissions import IsOwnerOrReadOnly
-
+        
 
 # 개요
 """
@@ -47,12 +48,17 @@ class BoardListView(generics.ListAPIView):
 
     [상세고려사항]
     - 게시판은 인증 여부와 무관하게 접근 가능
-    - annotate(posts_count)를 통해 게시판별 게시글 수를 함께 제공
+    - annotate(posts_count)를 통해 게시판별 게시글 수를 한 번의 쿼리로 계산
+    - Serializer가 이 annotate 결과를 직접 사용하도록 설계
+
+    [최적화 내용]
+    - annotate로 집계한 posts_count를 Serializer에서 그대로 사용
+    - N+1 문제 완전 제거 (Board 10개 → 쿼리 1개)
     """
     queryset = Board.objects.annotate(posts_count=Count('posts')).all()
     serializer_class = BoardSerializer
-    permission_classes = []  # 누구나 조회 가능  ## "무조건 공개"의도라 AllowAny를 명시하는 방식도 고려중.
-
+    permission_classes = []
+    # TODO: 캐싱 적용 시 cache_page 데코레이터 또는 get_queryset에서 cache 사용
 
 # =========================
 # 2) Post Views
@@ -91,32 +97,36 @@ class PostListView(generics.ListCreateAPIView):
         """
         [설계의도]
         - 게시판 기준으로 게시글 목록을 조회
+        - 모든 집계 필드를 queryset 단계에서 미리 계산하여 Serializer N+1 방지
 
         [상세고려사항]
         - board_id, board_name 중 하나만 존재해도 조회 가능
         - 최상위 댓글 기준 comments_count 집계
-        - 좋아요 수를 annotate로 미리 계산하여 N+1 방지
+        - 좋아요 수를 annotate로 미리 계산
+        - select_related로 author, board 조인하여 추가 쿼리 방지
+
+        [최적화 내용]
+        - annotate 필드를 Serializer가 직접 사용하도록 설계
+        - 단일 쿼리로 모든 집계 완료
         """
-        # board_name 또는 board_id로 조회 지원
         board_name = self.kwargs.get('board_name')
         board_id = self.kwargs.get('board_id')
 
-        # board_id 우선, 없으면 board_name으로 게시판 조회
+        # 기본 queryset 구성
+        queryset = Post.objects.select_related('author', 'board').annotate(
+            likes_count=Count('likes', distinct=True),
+            comments_count=Count('comments', filter=Q(comments__parent=None), distinct=True)
+        )
+
+        # 게시판 필터링
         if board_id:
             board = get_object_or_404(Board, pk=board_id)
+            queryset = queryset.filter(board=board)
         elif board_name:
             board = get_object_or_404(Board, name=board_name)
-        else:
-            # [설계의도] 게시판 조건이 없는 경우 전체 게시글 조회
-            return Post.objects.select_related('author', 'board').annotate(
-                likes_count=Count('likes'),
-                comments_count=Count('comments', filter=Q(comments__parent=None))
-            ).order_by('-created_at') # 최신순 정렬.
+            queryset = queryset.filter(board=board)
 
-        return Post.objects.filter(board=board).select_related('author', 'board').annotate(
-            likes_count=Count('likes'),
-            comments_count=Count('comments', filter=Q(comments__parent=None))
-        ).order_by('-created_at')
+        return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):
         # ↑ CreateAPIView 계열에서 "저장 직전"에 서버가 강제로 값을 주입하고 싶을 때 오버라이드
@@ -144,32 +154,76 @@ class PostListView(generics.ListCreateAPIView):
 
 # 2.2 PostDetailView | 게시글 단건 조회/수정/삭제
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
-    # ↑ RetrieveUpdateDestroyAPIView: GET(단건 조회) + PUT/PATCH(수정) + DELETE(삭제)
     """
     [설계의도]
     - 게시글 단건 조회, 수정, 삭제를 담당하는 View
 
     [상세고려사항]
     - 작성자만 수정/삭제 가능하도록 IsOwnerOrReadOnly 적용
-    - 댓글, 좋아요를 함께 prefetch하여 성능 최적화
+    - 댓글, 좋아요, 스크랩을 함께 prefetch하여 성능 최적화
+    - 사용자별 상태(is_liked, is_scrapped)를 annotate로 미리 계산
+
+    [최적화 내용]
+    - Subquery를 활용하여 is_liked, is_scrapped를 단일 쿼리에서 계산
+    - Prefetch를 활용하여 댓글 트리를 효율적으로 로드
     """
-    queryset = Post.objects.select_related('author', 'board').prefetch_related('comments__author', 'likes')
     serializer_class = PostSerializer
     permission_classes = [IsOwnerOrReadOnly]
     lookup_url_kwarg = 'post_id'
 
-    def get_serializer_context(self):
-        # ↑ serializer에 추가 context(예: request)를 넘겨서 serializer가 "현재 사용자" 기반 계산을 하게 함
+    def get_queryset(self):
         """
         [설계의도]
-        - serializer 내부에서 request 객체를 활용하기 위함
+        - 게시글 상세 조회 시 필요한 모든 데이터를 한 번의 쿼리로 로드
 
         [상세고려사항]
-        - is_liked, is_scrapped 계산에 필요
+        - is_liked, is_scrapped를 Subquery로 계산하여 N+1 방지
+        - 댓글 및 대댓글을 Prefetch로 효율적으로 로드
         """
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
+        
+
+        user = self.request.user
+
+        # [설계의도]
+        # - 현재 사용자가 해당 게시글에 좋아요를 눌렀는지 여부를 Subquery로 계산
+        # [상세고려사항]
+        # - 로그인하지 않은 사용자는 항상 False
+        # - Exists를 사용하여 효율적인 boolean 연산
+        if user.is_authenticated:
+            user_liked_subquery = Exists(
+                PostLike.objects.filter(
+                    post=OuterRef('pk'),
+                    user=user
+                )
+            )
+            user_scrapped_subquery = Exists(
+                Scrap.objects.filter(
+                    post=OuterRef('pk'),
+                    user=user
+                )
+            )
+        else:
+            user_liked_subquery = Value(False, output_field=BooleanField())
+            user_scrapped_subquery = Value(False, output_field=BooleanField())
+
+        return Post.objects.select_related('author', 'board').prefetch_related(
+            # [설계의도]
+            # - 최상위 댓글과 그 작성자를 미리 로드
+            # - 대댓글과 대댓글 작성자도 함께 로드하여 N+1 방지
+            Prefetch(
+                'comments',
+                queryset=Comment.objects.filter(parent=None).select_related('author').prefetch_related(
+                    Prefetch(
+                        'replies',
+                        queryset=Comment.objects.select_related('author').order_by('created_at')
+                    )
+                ).order_by('created_at')
+            )
+        ).annotate(
+            likes_count=Count('likes', distinct=True),
+            is_liked=user_liked_subquery,
+            is_scrapped=user_scrapped_subquery
+        )
 
 # 2.3 PostSearchView | 게시글 검색 + 게시판 필터링
 class PostSearchView(generics.ListAPIView):
@@ -253,19 +307,37 @@ class CommentListView(generics.ListCreateAPIView):
         """
         [설계의도]
         - 특정 게시글의 최상위 댓글만 조회
+        - 대댓글을 Prefetch로 한 번에 로드하여 N+1 방지
 
         [상세고려사항]
         - parent=None 조건으로 댓글 depth 1만 반환
-        - 대댓글은 serializer에서 재귀 처리
+        - 대댓글은 serializer에서 재귀 처리하되, 이미 prefetch로 로드됨
+        - 대댓글의 대댓글까지 고려한 Prefetch 구성
+
+        [최적화 내용]
+        - Prefetch를 중첩하여 대댓글 트리를 효율적으로 로드
+        - 최대 depth 2~3까지 지원 (필요 시 확장 가능)
         """
+
         post_id = self.kwargs.get('post_id')
+
         return Comment.objects.filter(
             post_id=post_id,
-            parent=None # 최상위 댓글만 == parent가 없는 댓글만
-        ).select_related('author').prefetch_related('replies__author').order_by('created_at')
-        # ↑ prefetch_related('replies__author'):
-        #   - replies는 보통 related_name='replies'(Comment.parent의 reverse)
-        #   - 대댓글과 대댓글 작성자까지 미리 당겨서 N+1 방지
+            parent=None
+        ).select_related('author').prefetch_related(
+            # [설계의도]
+            # - 대댓글과 대댓글 작성자를 미리 로드
+            # - 대댓글의 대댓글도 필요 시 로드 (depth 3)
+            Prefetch(
+                'replies',
+                queryset=Comment.objects.select_related('author').prefetch_related(
+                    Prefetch(
+                        'replies',
+                        queryset=Comment.objects.select_related('author').order_by('created_at')
+                    )
+                ).order_by('created_at')
+            )
+        ).order_by('created_at')
 
     def perform_create(self, serializer):
         # ↑ 댓글 생성 시 post/author/parent를 서버에서 고정해 무결성 유지

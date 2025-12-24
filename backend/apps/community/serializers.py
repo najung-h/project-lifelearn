@@ -51,15 +51,17 @@ class BoardSerializer(serializers.ModelSerializer):
     - 게시판의 기본 정보와 함께, 해당 게시판에 속한 게시글 수(post_count)를
       요약 정보로 제공하기 위함
 
-    [상세 고려 사항]
-    - post_count는 Board ↔ Post 간 역참조 관계를 활용하여 계산됨
-    - source='posts.count'는 Board 객체 기준으로
-      obj.posts.count()를 내부적으로 호출해 게시글 개수를 반환
-    - 구현이 간단하고 가독성이 좋지만,
-      리스트 조회 시 객체 수만큼 count 쿼리가 발생할 수 있어(N+1 문제)
-      #TODO 대규모 트래픽 환경에서는 queryset 단계에서 annotate로 대체하는 것이 바람직함
+    [상세고려사항]
+    - posts_count는 View 단계에서 annotate로 미리 계산된 값을 사용
+    - source='posts.count' 방식은 N+1 문제를 유발하므로 제거
+    - View의 annotate 결과를 그대로 사용하여 성능 최적화
+
+    [최적화 내용]
+    - 기존: source='posts.count' → 각 Board마다 COUNT 쿼리 실행 (N+1)
+    - 변경: View의 annotate 필드 직접 사용 → 단일 쿼리로 처리
     """
-    posts_count = serializers.IntegerField(source='posts.count', read_only=True)
+    # source='posts.count' 대신 View에서 주입된 annotate 필드 사용
+    posts_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Board
@@ -73,18 +75,34 @@ class PostListSerializer(serializers.ModelSerializer):
     """
     [설계의도]
     - 게시글 목록 화면 최적화 시리얼라이저
+    - 게시글의 기본 정보 + 작성자 + 게시판 이름 + 좋아요 수 + 최상위 댓글 수 제공
+    - 목록 응답에서 불필요한 필드(예: content)를 제외하여 경량화
+    - N+1 문제를 완전히 제거하여 성능 최적화
 
     [상세고려사항]
     - content 제외로 응답 payload 최소화
+    - board_name, likes_count, comments_count는 별도 필드로 제공
+    - comments_count는 최상위 댓글 수만 집계
+    - like_count, comments_count는 View의 annotate결과 직접 사용
     """
     author = UserSerializer(read_only=True)
     board_name = serializers.CharField(source='board.name', read_only=True)
     # ↑ Post.board.name을 board_name이라는 문자열 필드로 노출
     #   - board 전체 객체를 내려주기엔 목록 응답이 무거울 수 있으니 이름만 제공하는 설계
-    likes_count = serializers.IntegerField(source='likes.count', read_only=True)
-    # ↑ 좋아요 수를 likes.count로 노출
-    #TODO: source='likes_count'(annotate 필드)를 쓰는 편이 N+1 방지에 더 좋음
-    comments_count = serializers.SerializerMethodField()
+    # [설계의도]
+    # - View에서 annotate(likes_count=Count('likes'))로 계산한 값을 직접 사용
+    # [상세고려사항]
+    # - 기존: source='likes.count' → N+1 문제 (각 Post마다 COUNT 쿼리)
+    # - 변경: annotate 필드 직접 사용 → 단일 쿼리로 처리
+    likes_count = serializers.IntegerField(read_only=True)
+
+    # [설계의도]
+    # - View에서 annotate(comments_count=Count(...))로 계산한 값을 직접 사용
+    # [상세고려사항]
+    # - 기존: SerializerMethodField + count() → N+1 문제
+    # - 변경: annotate 필드 직접 사용 → 성능 개선
+    # SerializerMethodField 대신 IntegerField로 변경
+    comments_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Post
@@ -101,7 +119,7 @@ class PostListSerializer(serializers.ModelSerializer):
         - 최상위 댓글 수만 노출
 
         [상세고려사항]
-        - #TODO 목록에서 각 Post마다 count() 호출 시 N+1 가능성 주의
+        - #TODO 목록에서 각 Post마다 count() 호출 시 N+1 가능성 주의, 실수로 호출될 경우 N+1 문제를 유발할 수 있음.
         """
         return obj.comments.filter(parent=None).count()
 
@@ -115,18 +133,15 @@ class PostSerializer(serializers.ModelSerializer):
     [상세고려사항]
     - 목록용(PostListSerializer)과 분리하여 payload 크기 및 책임을 명확히 구분
     - request context를 활용해 사용자별 상태(is_liked, is_scrapped)를 계산
-    - 댓글은 별도 API로 제공하므로 포함하지 않음
-    """
-    # 게시글 작성자 정보
-    author = UserSerializer(read_only=True)
-    # 게시글이 속한 게시판 정보
-    board = BoardSerializer(read_only=True)
+    - 댓글은 별도 API로 제공하므로 포함하지 않음 (또는 최상위만 제공)
 
-    # [설계의도]
-    # - 게시글 생성/수정 시 게시판을 ID로만 지정할 수 있도록 하기 위한 필드
-    # [상세고려사항]
-    # - source='board'로 실제 board FK와 매핑
-    # - write_only=True로 응답에는 노출하지 않음
+    [최적화 내용]
+    - likes_count: annotate 필드 직접 사용
+    - is_liked: View에서 Subquery로 미리 계산된 값 사용
+    - is_scrapped: View에서 Subquery로 미리 계산된 값 사용
+    """
+    author = UserSerializer(read_only=True)
+    board = BoardSerializer(read_only=True)
     board_id = serializers.PrimaryKeyRelatedField(
         queryset=Board.objects.all(),
         source='board',
@@ -134,99 +149,64 @@ class PostSerializer(serializers.ModelSerializer):
         required=False
     )
 
-    # [설계의도]
-    # - 게시글 상세 조회 시 댓글 트리를 함께 반환
-    # [상세고려사항]
-    # - 최상위 댓글만 직접 조회하고, 대댓글은 CommentSerializer 내부에서 재귀 처리
     comments = serializers.SerializerMethodField()
 
-    # 게시글의 좋아요 수를 집계 값으로 제공
-    likes_count = serializers.IntegerField(source='likes.count', read_only=True)
+    # [설계의도]
+    # - View에서 annotate로 계산된 좋아요 수 사용
+    # [상세고려사항]
+    # - N+1 방지를 위해 source 제거
+    likes_count = serializers.IntegerField(read_only=True)
 
     # [설계의도]
-    # - 현재 로그인한 사용자가 해당 게시글에 좋아요를 눌렀는지 여부 제공
+    # - View에서 Subquery 또는 prefetch로 미리 계산된 값 사용
     # [상세고려사항]
-    # - 비로그인 사용자의 경우 항상 False 반환
-    is_liked = serializers.SerializerMethodField()
+    # - 기존: 각 Post마다 exists() 쿼리 실행 (N+1)
+    # - 변경: View의 annotate 결과 직접 사용
+    # - View에서 user_has_liked 같은 필드로 annotate 해야 함
+    is_liked = serializers.BooleanField(read_only=True)
 
     # [설계의도]
-    # - 현재 로그인한 사용자가 게시글을 스크랩했는지 여부 제공
+    # - View에서 Subquery 또는 prefetch로 미리 계산된 값 사용
     # [상세고려사항]
-    # - Scrap 테이블을 직접 조회하여 상태 판단
-    is_scrapped = serializers.SerializerMethodField()
+    # - 기존: 각 Post마다 Scrap.objects.filter().exists() 실행 (N+1)
+    # - 변경: View의 annotate 결과 직접 사용
+    is_scrapped = serializers.BooleanField(read_only=True)
 
     class Meta:
-        """
-        [설계의도]
-        - 게시글 상세 화면에서 필요한 필드만 명시적으로 관리
-        """
         model = Post
         fields = (
             'id', 'author', 'board', 'board_id', 'title', 'content',
             'created_at', 'updated_at', 'likes_count', 'is_liked',
             'is_scrapped', 'comments'
         )
-        # [설계의도] 서버에서 자동 관리되는 필드는 수정 불가 처리
         read_only_fields = ('id', 'author', 'created_at', 'updated_at')
-    
+
     def get_comments(self, obj):
         """
         [설계의도]
-        - 댓글 트리의 진입점 역할
-        - 게시글에 속한 최상위 댓글만 조회
+        - View의 Prefetch 객체를 통해 미리 로드(parent=None 필터링됨)된 데이터를 사용
 
-        [상세고려사항]
-        - parent=None 조건으로 1depth 댓글만 조회
-        - 대댓글은 CommentSerializer.get_replies()에서 재귀적으로 포함
-        - # TODO 성능 최적화 필요
-            - 댓글/대댓글이 많으면 payload가 커질 수 있음(페이지네이션 고려 대상)
+        [Fix] .filter(parent=None) 대신 .all() 사용
+        - 이유: filter()는 무조건 DB 쿼리를 다시 날림.
+        - View에서 Prefetch('comments', queryset=Comment.objects.filter(parent=None)...)을
+          사용했다고 가정하면, .all()을 해야 캐시된(이미 필터링된) 리스트를 반환함.
         """
-        top_level_comments = obj.comments.filter(parent=None)
+        # View에서 Prefetch 설정을 잘 했다면 .all()에 최상위 댓글만 들어있음
+        top_level_comments = obj.comments.all()
         return CommentSerializer(top_level_comments, many=True).data
-
-    @extend_schema_field(OpenApiTypes.BOOL)
-    def get_is_liked(self, obj):
-        """
-        [설계의도]
-        - 사용자 맞춤 UI 렌더링을 위한 좋아요 상태 제공
-
-        [상세고려사항]
-        - serializer context에 request가 주입되어야 정상 동작
-        - 인증되지 않은 사용자는 False 처리
-        """
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.likes.filter(pk=request.user.pk).exists()
-        return False
-
-    @extend_schema_field(OpenApiTypes.BOOL)
-    def get_is_scrapped(self, obj):
-        """
-        [설계의도]
-        - 사용자 맞춤 UI 렌더링을 위한 스크랩 상태 제공
-
-        [상세고려사항]
-        - Scrap 테이블 기준으로 존재 여부만 확인
-        - 인증되지 않은 사용자는 False 처리
-        """
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Scrap.objects.filter(user=request.user, post=obj).exists()
-        return False
-
 
 # 3.1 CommentSerializer | 댓글 + 대댓글 재귀 표현
 class CommentSerializer(serializers.ModelSerializer):
     """
     [설계의도]
     - 댓글 + 대댓글을 재귀적으로 표현하기 위한 시리얼라이저
+    - prefetch_related로 미리 로드된 대댓글 사용하여 N+1 방지
 
     [상세고려사항]
     - replies는 SerializerMethodField로 동적 계산
+    - View에서 prefetch_related('replies__author')로 미리 로드 필요
     """
     author = UserSerializer(read_only=True)
-    # ↑ Comment.author를 그대로 id로만 주지 않고, UserSerializer로 "중첩(nested)" 출력
-    #   - read_only라서 댓글 생성 시 author를 body로 받지 않음(서버에서 넣어야 함)
     replies = serializers.SerializerMethodField()
 
     class Meta:
@@ -238,17 +218,18 @@ class CommentSerializer(serializers.ModelSerializer):
         """
         [설계의도]
         - 대댓글을 재귀 구조로 포함
+        - prefetch_related로 미리 로드된 데이터 활용
 
         [상세고려사항]
-        # TODO
-        - 이 구조는 "깊이"가 깊거나 댓글이 많으면 호출이 많이 발생할 수 있음
-        - prefetch_related('replies__author') 같은 최적화 고도화 필요.
-        - views.py에서 어느 정도는 하고 있음.
+        - 기존: obj.replies.exists() → 각 댓글마다 EXISTS 쿼리 실행 (N+1)
+        - 변경: obj.replies.all() 직접 사용 → prefetch로 이미 로드된 데이터 활용
+        - exists() 체크 제거로 쿼리 감소
         """
-        if obj.replies.exists():
-            return CommentSerializer(obj.replies.all(), many=True).data
+        # prefetch_related로 미리 로드되어 있으므로 추가 쿼리 없음
+        replies = obj.replies.all()
+        if replies:
+            return CommentSerializer(replies, many=True).data
         return []
-
 
 # 4.1 ScrapSerializer | 스크랩 목록용
 class ScrapSerializer(serializers.ModelSerializer):
