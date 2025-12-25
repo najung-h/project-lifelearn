@@ -268,6 +268,7 @@ const topRecommendation = computed(() => {
   display: grid;
   grid-template-columns: 1fr;
   gap: 32px;
+  align-items: start; /* 각 카드를 상단 정렬하여 높이가 달라도 깔끔하게 정렬 */
 }
 
 @media (min-width: 1280px) {

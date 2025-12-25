@@ -240,6 +240,7 @@ const goToCourseDetail = () => {
 /* Key Points Section */
 .key-points-section {
   padding: 0 32px 20px 32px;
+  min-height: 140px; /* 핵심 포인트 개수가 달라도 기본 카드 높이 통일 */
 }
 
 .points-title {
