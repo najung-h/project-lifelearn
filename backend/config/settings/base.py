@@ -143,6 +143,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # dev 및 prod 설정은 각각 dev.py, prod.py에서 관리
 
 
+# Cache
+# https://docs.djangoproject.com/en/5.2/topics/cache/
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,  # 최대 캐시 항목 수
+        }
+    }
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

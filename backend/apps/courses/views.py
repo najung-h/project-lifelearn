@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Q, Count, Avg, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django_filters.rest_framework import DjangoFilterBackend
@@ -199,6 +200,36 @@ class CourseListView(generics.ListAPIView):
         # - annotate/filter 과정에서 JOIN이 생기면 동일 Course가 중복 row로 나올 수 있음
         # - distinct()는 최종 결과에서 중복 Course 제거(단, DB에 따라 성능 영향이 있으니 최소화가 이상적)
         return queryset.order_by(ordering).distinct()  # 정렬 적용 후 중복 제거한 최종 QuerySet 반환
+
+    def list(self, request, *args, **kwargs):
+        """
+        [설계 의도]
+        - 캐싱을 적용하여 동일한 쿼리 파라미터 요청 시 DB 조회 없이 캐시에서 응답
+        - 캐시 키: 쿼리 파라미터를 기반으로 생성
+        - 캐시 TTL: 5분 (300초)
+
+        [처리 흐름]
+        1. 쿼리 파라미터로 캐시 키 생성
+        2. 캐시에서 데이터 확인
+        3. 캐시 히트 시 캐시 데이터 반환
+        4. 캐시 미스 시 DB 조회 후 캐시 저장 및 반환
+        """
+        # 1. 캐시 키 생성 (쿼리 파라미터 기반)
+        query_params = request.GET.urlencode()
+        cache_key = f"course_list:{query_params}"
+
+        # 2. 캐시에서 데이터 확인
+        cached_response = cache.get(cache_key)
+        if cached_response is not None:
+            return Response(cached_response)
+
+        # 3. 캐시 미스 - DB 조회
+        response = super().list(request, *args, **kwargs)
+
+        # 4. 캐시에 저장 (5분 TTL)
+        cache.set(cache_key, response.data, 300)
+
+        return response
 
 
 
