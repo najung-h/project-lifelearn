@@ -47,7 +47,7 @@
    - 대시보드를 통한 학습 현황 한눈에 파악
    - 수강 진도 추적 및 이어듣기 기능
    - 위시리스트 및 수강평 관리
-  
+
 ### 기술적 특징
 
 - **도메인 주도 설계(DDD)**: 앱별 명확한 책임 분리 및 모델 배치
@@ -151,9 +151,9 @@
 |---|---|
 | 단계별로 구현 과정 중 학습한 내용, 어려웠던 부분, 새로 배운 것들 및 느낀 점을 상세히 기록한 README.md | `backend/apps/{각 앱}/README.md` |
 | 데이터베이스 모델링 (ERD) | [ERD 보러가기](docs/erd.md) |
-| 추천 알고리즘에 대한 기술적 설명 |  |
+| 추천 알고리즘에 대한 기술적 설명 | [추천시스템](docs/recommendation_system.md) |
 | 핵심 기능에 대한 설명 | [기능정의서 보러가기](docs/기능정의서.md) |
-| 생성형 AI를 활용한 부분 | [LLM으로 강의 평가하기](./backend/apps/comparisons/management/commands/generate_ai_reviews.py) [임베딩하기]|
+| 생성형 AI를 활용한 부분 | [LLM으로 강의 평가하기](./backend/apps/comparisons/management/commands/README.md) [임베딩하기](./backend/apps/courses/management/commands/README.md) |
 | (배포했을 경우) 서비스 URL | [사이트 바로가기](life-learn.site) |
 | commit message convention | [커밋 메시지 컨벤션](docs/commit-convention.md) |
 | git branch rule | [깃 브랜치 전략](docs/git-branch-rule.md) |
@@ -695,7 +695,7 @@ npm install
 npm run dev
 ```
 
-프론트엔드 접속: `http://localhost:3000` (또는 Vue.js 설정에 따라)
+프론트엔드 접속: `http://localhost:5173` (또는 Vue.js 설정에 따라)
 
 ---
 
@@ -753,7 +753,7 @@ Docker Compose는 다음 서비스를 자동으로 실행합니다:
 
 1. **db** (PostgreSQL + pgvector)
    - Port: 5432
-   - 자동으로 vector 확장 설치
+   - 자동으로 pgvector 확장 설치
 
 2. **elasticsearch**
    - Port: 9200
