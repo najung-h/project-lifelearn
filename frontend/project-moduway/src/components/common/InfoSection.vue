@@ -63,24 +63,4 @@ defineProps({
   color: #374151;
   line-height: 1.7;
 }
-
-/* 다크모드 대응 (선택사항) */
-@media (prefers-color-scheme: dark) {
-  .info-section {
-    background: #1f2937;
-    border-color: #374151;
-  }
-
-  .section-header {
-    border-bottom-color: #374151;
-  }
-
-  .section-title {
-    color: #f9fafb;
-  }
-
-  .section-content {
-    color: #d1d5db;
-  }
-}
 </style>
