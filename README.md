@@ -9,13 +9,13 @@
 | As Is | To Be |
 | :---: | :---: |
 | 검색 | 검색 기능 개선 |
-| [이미지](./docs/images/.png) | [이미지](./docs/images/.png) |
+| ![이미지](./docs/images/.png) | ![이미지](./docs/images/.png) |
 | 추천 | 맞춤 강의 추천 |
-| [이미지](./docs/images/.png) | [이미지](./docs/images/.png) |
+| ![이미지](./docs/images/.png) | ![이미지](./docs/images/.png) |
 | - | AI 강좌 분석 |
-| [이미지](./docs/images/.png) | [이미지](./docs/images/.png) |
+| ![이미지](./docs/images/.png) | ![이미지](./docs/images/.png) |
 | UI/UX | UI/UX 개선 |
-| [이미지](./docs/images/asis4.png) | [이미지](./docs/images/.png) |
+| ![이미지](./docs/images/asis4.png) | ![이미지](./docs/images/.png) |
 | 기능 | 기능 개선 |
 
 
