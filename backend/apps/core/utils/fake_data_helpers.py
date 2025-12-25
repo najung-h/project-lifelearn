@@ -14,50 +14,50 @@ random.seed(1224)
 # 하드코딩 데이터 리스트
 BOARD_DATA = [
     # 1. 공지사항 (Notice)
-    {"name": "공지사항", "description": "서비스의 주요 공지사항과 소식을 전달하는 공간입니다.", "category": "notice", "type": "notice"},
+    {"name": "공지사항", "slug": "notice", "description": "서비스의 주요 공지사항과 소식을 전달하는 공간입니다.", "category": "notice", "type": "notice"},
 
     # 2. 인문 (Humanity)
-    {"name": "인문_소통방", "description": "인문학 분야에 관심 있는 분들이 자유롭게 소통하는 공간입니다.", "category": "humanity", "type": "talk"},
-    {"name": "인문_질문방", "description": "인문학 학습 중 궁금한 점을 질문하고 답변하는 공간입니다.", "category": "humanity", "type": "qna"},
-    {"name": "인문_강의후기", "description": "인문학 강좌 수강 후기와 추천 정보를 공유하는 공간입니다.", "category": "humanity", "type": "review"},
+    {"name": "인문_소통방", "slug": "humanity_talk", "description": "인문학 분야에 관심 있는 분들이 자유롭게 소통하는 공간입니다.", "category": "humanity", "type": "talk"},
+    {"name": "인문_질문방", "slug": "humanity_qna", "description": "인문학 학습 중 궁금한 점을 질문하고 답변하는 공간입니다.", "category": "humanity", "type": "qna"},
+    {"name": "인문_강의후기", "slug": "humanity_review", "description": "인문학 강좌 수강 후기와 추천 정보를 공유하는 공간입니다.", "category": "humanity", "type": "review"},
 
     # 3. 사회 (Social)
-    {"name": "사회_소통방", "description": "사회과학 분야의 이슈와 정보를 자유롭게 나누는 공간입니다.", "category": "social", "type": "talk"},
-    {"name": "사회_질문방", "description": "사회과학 공부 중 막히는 부분을 질문하는 공간입니다.", "category": "social", "type": "qna"},
-    {"name": "사회_강의후기", "description": "사회과학 강좌에 대한 솔직한 후기를 공유하는 공간입니다.", "category": "social", "type": "review"},
+    {"name": "사회_소통방", "slug": "social_talk", "description": "사회과학 분야의 이슈와 정보를 자유롭게 나누는 공간입니다.", "category": "social", "type": "talk"},
+    {"name": "사회_질문방", "slug": "social_qna", "description": "사회과학 공부 중 막히는 부분을 질문하는 공간입니다.", "category": "social", "type": "qna"},
+    {"name": "사회_강의후기", "slug": "social_review", "description": "사회과학 강좌에 대한 솔직한 후기를 공유하는 공간입니다.", "category": "social", "type": "review"},
 
     # 4. 교육 (Education)
-    {"name": "교육_소통방", "description": "교육학 및 교수법 등에 대해 이야기 나누는 공간입니다.", "category": "education", "type": "talk"},
-    {"name": "교육_질문방", "description": "교육 분야 학습 내용에 대해 묻고 답하는 공간입니다.", "category": "education", "type": "qna"},
-    {"name": "교육_강의후기", "description": "교육 분야 강좌 수강 경험을 공유하는 공간입니다.", "category": "education", "type": "review"},
+    {"name": "교육_소통방", "slug": "education_talk", "description": "교육학 및 교수법 등에 대해 이야기 나누는 공간입니다.", "category": "education", "type": "talk"},
+    {"name": "교육_질문방", "slug": "education_qna", "description": "교육 분야 학습 내용에 대해 묻고 답하는 공간입니다.", "category": "education", "type": "qna"},
+    {"name": "교육_강의후기", "slug": "education_review", "description": "교육 분야 강좌 수강 경험을 공유하는 공간입니다.", "category": "education", "type": "review"},
 
     # 5. 공학 (Engineering)
-    {"name": "공학_소통방", "description": "공학 기술 트렌드와 정보를 공유하는 소통 공간입니다.", "category": "engineering", "type": "talk"},
-    {"name": "공학_질문방", "description": "공학 전공 공부 및 실습 관련 질문을 하는 공간입니다.", "category": "engineering", "type": "qna"},
-    {"name": "공학_강의후기", "description": "공학 계열 강좌 수강 후기를 나누는 공간입니다.", "category": "engineering", "type": "review"},
+    {"name": "공학_소통방", "slug": "engineering_talk", "description": "공학 기술 트렌드와 정보를 공유하는 소통 공간입니다.", "category": "engineering", "type": "talk"},
+    {"name": "공학_질문방", "slug": "engineering_qna", "description": "공학 전공 공부 및 실습 관련 질문을 하는 공간입니다.", "category": "engineering", "type": "qna"},
+    {"name": "공학_강의후기", "slug": "engineering_review", "description": "공학 계열 강좌 수강 후기를 나누는 공간입니다.", "category": "engineering", "type": "review"},
 
     # 6. 자연 (Natural)
-    {"name": "자연_소통방", "description": "자연과학 기초와 심화 주제를 다루는 소통방입니다.", "category": "natural", "type": "talk"},
-    {"name": "자연_질문방", "description": "수학, 물리, 화학 등 자연과학 질문을 해결하는 공간입니다.", "category": "natural", "type": "qna"},
-    {"name": "자연_강의후기", "description": "자연과학 분야 강좌의 장단점을 공유하는 공간입니다.", "category": "natural", "type": "review"},
+    {"name": "자연_소통방", "slug": "natural_talk", "description": "자연과학 기초와 심화 주제를 다루는 소통방입니다.", "category": "natural", "type": "talk"},
+    {"name": "자연_질문방", "slug": "natural_qna", "description": "수학, 물리, 화학 등 자연과학 질문을 해결하는 공간입니다.", "category": "natural", "type": "qna"},
+    {"name": "자연_강의후기", "slug": "natural_review", "description": "자연과학 분야 강좌의 장단점을 공유하는 공간입니다.", "category": "natural", "type": "review"},
 
     # 7. 의약 (Medical)
-    {"name": "의약_소통방", "description": "의약학 분야 관심사나 정보를 교류하는 공간입니다.", "category": "medical", "type": "talk"},
-    {"name": "의약_질문방", "description": "의약학 학습 과정에서의 궁금증을 해소하는 공간입니다.", "category": "medical", "type": "qna"},
-    {"name": "의약_강의후기", "description": "의약학 관련 강좌 수강 후기를 공유하는 공간입니다.", "category": "medical", "type": "review"},
+    {"name": "의약_소통방", "slug": "medical_talk", "description": "의약학 분야 관심사나 정보를 교류하는 공간입니다.", "category": "medical", "type": "talk"},
+    {"name": "의약_질문방", "slug": "medical_qna", "description": "의약학 학습 과정에서의 궁금증을 해소하는 공간입니다.", "category": "medical", "type": "qna"},
+    {"name": "의약_강의후기", "slug": "medical_review", "description": "의약학 관련 강좌 수강 후기를 공유하는 공간입니다.", "category": "medical", "type": "review"},
 
     # 8. 예체능 (Arts & PE)
-    {"name": "예체능_소통방", "description": "예술 및 체육 분야의 영감을 나누는 소통 공간입니다.", "category": "arts_pe", "type": "talk"},
-    {"name": "예체능_질문방", "description": "실기나 이론 등 예체능 관련 질문을 하는 공간입니다.", "category": "arts_pe", "type": "qna"},
-    {"name": "예체능_강의후기", "description": "예체능 분야 강좌 체험 후기를 공유하는 공간입니다.", "category": "arts_pe", "type": "review"},
+    {"name": "예체능_소통방", "slug": "arts_pe_talk", "description": "예술 및 체육 분야의 영감을 나누는 소통 공간입니다.", "category": "arts_pe", "type": "talk"},
+    {"name": "예체능_질문방", "slug": "arts_pe_qna", "description": "실기나 이론 등 예체능 관련 질문을 하는 공간입니다.", "category": "arts_pe", "type": "qna"},
+    {"name": "예체능_강의후기", "slug": "arts_pe_review", "description": "예체능 분야 강좌 체험 후기를 공유하는 공간입니다.", "category": "arts_pe", "type": "review"},
 
     # 9. 융·복합 (Convergence)
-    {"name": "융·복합_소통방", "description": "다양한 학문이 융합된 주제로 소통하는 공간입니다.", "category": "convergence", "type": "talk"},
-    {"name": "융·복합_질문방", "description": "융·복합 분야의 새로운 개념에 대해 질문하는 공간입니다.", "category": "convergence", "type": "qna"},
-    {"name": "융·복합_강의후기", "description": "융·복합 강좌 수강 후기를 통해 인사이트를 나누는 공간입니다.", "category": "convergence", "type": "review"},
+    {"name": "융·복합_소통방", "slug": "convergence_talk", "description": "다양한 학문이 융합된 주제로 소통하는 공간입니다.", "category": "convergence", "type": "talk"},
+    {"name": "융·복합_질문방", "slug": "convergence_qna", "description": "융·복합 분야의 새로운 개념에 대해 질문하는 공간입니다.", "category": "convergence", "type": "qna"},
+    {"name": "융·복합_강의후기", "slug": "convergence_review", "description": "융·복합 강좌 수강 후기를 통해 인사이트를 나누는 공간입니다.", "category": "convergence", "type": "review"},
 
     # 10. 기타 (Etc)
-    {"name": "기타", "description": "특정 분야에 속하지 않는 자유로운 이야기를 나누는 공간입니다.", "category": "etc", "type": "talk"},
+    {"name": "기타", "slug": "etc_talk", "description": "특정 분야에 속하지 않는 자유로운 이야기를 나누는 공간입니다.", "category": "etc", "type": "talk"},
 ]
 
 """CATEGORIES = [

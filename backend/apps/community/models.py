@@ -11,10 +11,12 @@ class Board(models.Model):
     - 게시글(Post)이 반드시 하나의 게시판(Board)에 속하도록 강제
 
     [상세고려사항]
-    - name은 URL 및 조회 기준으로 사용되므로 unique 제약 적용
+    - name은 한글 이름 (예: 인문_소통방)
+    - slug는 영문 URL용 (예: humanity_talk) - URL 및 조회 기준으로 사용
     - description은 UI 표시용이므로 선택 입력 허용
     """
     name = models.CharField(max_length=50, unique=True, help_text="게시판 이름 (예: 자유게시판)")
+    slug = models.SlugField(max_length=50, unique=True, help_text="URL용 영문 식별자 (예: humanity_talk)")
     description = models.CharField(max_length=150, blank=True, help_text="게시판 설명")
     created_at = models.DateTimeField(auto_now_add=True)
 

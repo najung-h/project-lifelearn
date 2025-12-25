@@ -65,14 +65,14 @@ urlpatterns = [
         name='post-list-by-id'
     ),
 
-    # [GET]
-    # /community/<board_name>/posts/
-    # - 기능: 특정 게시판의 게시글 목록 조회 (board_name 기준)
-    # - 예시: /community/인문_소통방/posts/
+    # [GET, POST]
+    # /community/<board_slug>/posts/
+    # - 기능: 특정 게시판의 게시글 목록 조회 (board_slug 기준)
+    # - 예시: /community/humanity_talk/posts/
     path(
-        '<str:board_name>/posts/',
+        '<slug:board_slug>/posts/',
         views.PostListView.as_view(),
-        name='post-list-by-name'
+        name='post-list-by-slug'
     ),
 
     

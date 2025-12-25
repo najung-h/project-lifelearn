@@ -109,7 +109,7 @@ class PostListView(generics.ListCreateAPIView):
         - annotate 필드를 Serializer가 직접 사용하도록 설계
         - 단일 쿼리로 모든 집계 완료
         """
-        board_name = self.kwargs.get('board_name')
+        board_slug = self.kwargs.get('board_slug')
         board_id = self.kwargs.get('board_id')
 
         # 기본 queryset 구성
@@ -122,8 +122,8 @@ class PostListView(generics.ListCreateAPIView):
         if board_id:
             board = get_object_or_404(Board, pk=board_id)
             queryset = queryset.filter(board=board)
-        elif board_name:
-            board = get_object_or_404(Board, name=board_name)
+        elif board_slug:
+            board = get_object_or_404(Board, slug=board_slug)
             queryset = queryset.filter(board=board)
 
         return queryset.order_by('-created_at')
@@ -138,14 +138,14 @@ class PostListView(generics.ListCreateAPIView):
         - URL 기준(board_id / board_name)을 우선 신뢰
         - 요청 본문에 board_id가 포함된 경우도 fallback으로 허용
         """
-        # board_id로 게시글 생성 (API 설계 문서 기준)
+        # board_id 또는 board_slug로 게시글 생성
         board_id = self.kwargs.get('board_id')
-        board_name = self.kwargs.get('board_name')
+        board_slug = self.kwargs.get('board_slug')
 
         if board_id:
             board = get_object_or_404(Board, pk=board_id)
-        elif board_name:
-            board = get_object_or_404(Board, name=board_name)
+        elif board_slug:
+            board = get_object_or_404(Board, slug=board_slug)
         else:
             # 요청 본문에서 board_id를 받을 수도 있음
             board = serializer.validated_data.get('board')
