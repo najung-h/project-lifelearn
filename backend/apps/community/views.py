@@ -221,6 +221,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
         ).annotate(
             likes_count=Count('likes', distinct=True),
+            comments_count=Count('comments', filter=Q(comments__parent=None), distinct=True),
             is_liked=user_liked_subquery,
             is_scrapped=user_scrapped_subquery
         )
