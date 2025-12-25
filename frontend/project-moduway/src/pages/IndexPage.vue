@@ -18,15 +18,15 @@
             분야별 탐색
         </div>
         <div class="cate-grid">
-            <div class="cate-item"><span class="cate-icon">📚</span>인문</div>
-            <div class="cate-item"><span class="cate-icon">👥</span>사회</div>
-            <div class="cate-item"><span class="cate-icon">🎓</span>교육</div>
-            <div class="cate-item"><span class="cate-icon">⚙️</span>공학</div>
-            <div class="cate-item"><span class="cate-icon">🔬</span>자연</div>
-            <div class="cate-item"><span class="cate-icon">🩺</span>의약</div>
-            <div class="cate-item"><span class="cate-icon">🎨</span>예체능</div>
-            <div class="cate-item"><span class="cate-icon">🧩</span>융·복합</div>
-            <div class="cate-item"><span class="cate-icon">✨</span>기타</div>
+            <router-link to="/courses?category=인문" class="cate-item"><span class="cate-icon">📚</span>인문</router-link>
+            <router-link to="/courses?category=사회" class="cate-item"><span class="cate-icon">👥</span>사회</router-link>
+            <router-link to="/courses?category=교육" class="cate-item"><span class="cate-icon">🎓</span>교육</router-link>
+            <router-link to="/courses?category=공학" class="cate-item"><span class="cate-icon">⚙️</span>공학</router-link>
+            <router-link to="/courses?category=자연" class="cate-item"><span class="cate-icon">🔬</span>자연</router-link>
+            <router-link to="/courses?category=의약" class="cate-item"><span class="cate-icon">🩺</span>의약</router-link>
+            <router-link to="/courses?category=예체능" class="cate-item"><span class="cate-icon">🎨</span>예체능</router-link>
+            <router-link to="/courses?category=융·복합" class="cate-item"><span class="cate-icon">🧩</span>융·복합</router-link>
+            <router-link to="/courses?category=기타" class="cate-item"><span class="cate-icon">✨</span>기타</router-link>
         </div>
     </section>
 
@@ -118,7 +118,18 @@ const courses = ref([
 @media (min-width: 992px) {
     .cate-grid { grid-template-columns: repeat(5, 1fr); }
 }
-.cate-item { background: var(--bg-light); padding: 20px 10px; text-align: center; border-radius: 12px; transition: 0.3s; cursor: pointer; border: 1px solid transparent; }
+.cate-item { 
+    background: var(--bg-light); 
+    padding: 20px 10px; 
+    text-align: center; 
+    border-radius: 12px; 
+    transition: 0.3s; 
+    cursor: pointer; 
+    border: 1px solid transparent;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
 .cate-item:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-3px); }
 .cate-icon { font-size: 24px; margin-bottom: 10px; display: block; }
 

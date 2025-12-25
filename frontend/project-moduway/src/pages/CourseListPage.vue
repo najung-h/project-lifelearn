@@ -175,8 +175,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import CourseCard from '@/components/common/CourseCard.vue';
 import { getCourseList, searchKeywordCourses, searchSemanticCourses } from '@/api/courses';
+
+const route = useRoute();
 
 const searchQuery = ref('');
 const selectedCategory = ref('');  // 단일 선택으로 변경
@@ -325,7 +328,14 @@ const changeInitialPage = (newPage) => {
 };
 
 onMounted(() => {
-  loadInitialCourses();
+  // URL 쿼리 파라미터 확인 (메인페이지 등에서 넘어온 경우)
+  if (route.query.category) {
+    // 값이 변경되면 아래 watch가 동작하여 loadInitialCourses() 호출됨
+    selectedCategory.value = route.query.category;
+  } else {
+    // 파라미터가 없으면 직접 로드
+    loadInitialCourses();
+  }
 });
 
 // --- 검색 트리거 ---
