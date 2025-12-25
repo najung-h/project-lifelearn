@@ -38,17 +38,24 @@
         </nav>
 
         <section v-show="activeTab === 'intro'" id="intro" class="detail-section">
-          <h2>강좌 소개</h2>
-          <div class="iframe-wrapper">
-            <iframe
-              ref="summaryIframe"
-              :srcdoc="wrappedHtml"
-              class="summary-iframe"
-              @load="resizeIframe"
-              scrolling="no"
-              frameborder="0"
-            ></iframe>
-          </div>
+          <!-- AI 3줄 요약 섹션 -->
+          <InfoSection v-if="course.ai_summary" title="AI 요약" icon="✨">
+            <p class="ai-content">{{ course.ai_summary }}</p>
+          </InfoSection>
+
+          <!-- 강좌 소개 섹션 -->
+          <InfoSection title="강좌 소개" icon="📚">
+            <div class="iframe-wrapper">
+              <iframe
+                ref="summaryIframe"
+                :srcdoc="wrappedHtml"
+                class="summary-iframe"
+                @load="resizeIframe"
+                scrolling="no"
+                frameborder="0"
+              ></iframe>
+            </div>
+          </InfoSection>
         </section>
 
         <section v-if="activeTab === 'reviews'" id="reviews" class="detail-section">
@@ -99,6 +106,7 @@ import { getCourseDetail, getRecommendedCourses } from '@/api/courses';
 import { addWishlist, removeWishlist } from '@/api/mypage';
 import CourseCard from '@/components/common/CourseCard.vue';
 import CourseReviewSection from '@/components/course/CourseReviewSection.vue';
+import InfoSection from '@/components/common/InfoSection.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -107,33 +115,139 @@ const course = ref(null);
 const recommendedCourses = ref([]);
 const summaryIframe = ref(null);
 
+// summary 텍스트를 HTML로 파싱
+const parseSummary = (text) => {
+  if (!text) return '<p>강좌 소개가 없습니다.</p>';
+
+  let html = text;
+
+  // 1. 주요 섹션 제목 변환 (h3)
+  const sections = ['강좌 소개', '강좌소개', '수업내용/목표', '학습목표', '홍보/예시 영상', '홍보/예시영상', '강좌 운영 계획', '강좌운영계획', '강의계획서'];
+  sections.forEach(section => {
+    const regex = new RegExp(section, 'gi');
+    html = html.replace(regex, `<h3 class="section-title">${section}</h3>`);
+  });
+
+  // 2. 주차 제목 변환 (h4)
+  html = html.replace(/(\d+)\s*주차?\s+([\w\s가-힣]+)/g, '<h4 class="week-title">$1주차 $2</h4>');
+  html = html.replace(/주차\s+주차명/g, '<h4 class="week-title">주차별 내용</h4>');
+
+  // 3. 차시 강조
+  html = html.replace(/(\d+-?\d*)\s*차시\s*/g, '<strong class="lesson">$1차시</strong> ');
+
+  // 4. 불릿 포인트 (숫자. 패턴)
+  html = html.replace(/(\d+)\.\s+([^\d\n]{5,100})/g, '<p class="bullet">$1. $2</p>');
+
+  // 5. 하이픈 불릿 (- 패턴)
+  html = html.replace(/-\s+([가-힣\w\s]{5,100})/g, '<p class="bullet-dash">• $1</p>');
+
+  // 6. 문단 분리 (띄어쓰기 여러 개로 구분)
+  if (!html.includes('<p>') && !html.includes('<h')) {
+    const paragraphs = html.split(/\s{3,}/).filter(p => p.trim().length > 10);
+    html = paragraphs.map(p => `<p>${p.trim()}</p>`).join('\n');
+  }
+
+  return html;
+};
+
 // [핵심] iframe에 주입할 HTML 구성 (스타일 격리)
 const wrappedHtml = computed(() => {
-  const content = course.value?.raw_summary || 
-                  (course.value?.summary ? course.value.summary.replace(/\n/g, '<br>') : '강좌 소개가 없습니다.');
-  
+  let content = '';
+
+  if (course.value?.raw_summary) {
+    // raw_summary가 있으면 그대로 사용
+    content = course.value.raw_summary;
+  } else if (course.value?.summary) {
+    // summary를 파싱해서 HTML로 변환
+    content = parseSummary(course.value.summary);
+  } else {
+    content = '<p>강좌 소개가 없습니다.</p>';
+  }
+
   return `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <style>
-          body { 
-            margin: 0; 
-            padding: 15px; 
-            font-family: 'Pretendard', -apple-system, sans-serif; 
-            line-height: 1.7; 
-            color: #374151; 
-            word-break: break-all;
-            overflow: hidden; 
+          body {
+            margin: 0;
+            padding: 24px;
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            line-height: 2.0;
+            color: #374151;
+            word-break: keep-all;
+            word-wrap: break-word;
+            overflow: hidden;
           }
+
+          /* 섹션 제목 */
+          .section-title {
+            color: #111827;
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin: 2.5em 0 1em 0;
+            padding-left: 14px;
+            border-left: 4px solid #2563eb;
+            line-height: 1.4;
+          }
+
+          .section-title:first-child {
+            margin-top: 0;
+          }
+
+          /* 주차 제목 */
+          .week-title {
+            color: #1f2937;
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin: 1.8em 0 0.8em 0;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 8px;
+            border-left: 3px solid #6b7280;
+          }
+
+          /* 차시 */
+          .lesson {
+            color: #2563eb;
+            font-weight: 600;
+            background: #eff6ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+          }
+
+          /* 불릿 포인트 */
+          .bullet, .bullet-dash {
+            margin: 0.8em 0;
+            padding-left: 1.5em;
+            position: relative;
+            line-height: 1.8;
+          }
+
+          .bullet::before {
+            content: '▪';
+            position: absolute;
+            left: 0;
+            color: #2563eb;
+            font-weight: bold;
+          }
+
+          /* 일반 문단 */
+          p {
+            margin: 1.2em 0;
+            text-align: justify;
+            line-height: 1.9;
+          }
+
           /* 외부 고정 너비 강제 무력화 */
           * { max-width: 100% !important; box-sizing: border-box !important; }
-          img { height: auto !important; display: block; margin: 15px auto; border-radius: 8px; }
-          table { width: 100% !important; border-collapse: collapse; margin: 20px 0; display: table; }
-          td, th { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
-          p { margin: 1em 0; }
-          a { color: #2563eb; }
+          img { height: auto !important; display: block; margin: 20px auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+          table { width: 100% !important; border-collapse: collapse; margin: 20px 0; }
+          td, th { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
+          th { background: #f9fafb; font-weight: 600; }
+          a { color: #2563eb; text-decoration: none; }
+          a:hover { text-decoration: underline; }
         </style>
       </head>
       <body>${content}</body>
@@ -227,12 +341,13 @@ onMounted(() => {
 /* 컨테이너 및 기본 레이아웃 */
 .layout-container { display: grid; grid-template-columns: 1fr 350px; gap: 40px; margin: 40px auto 80px; }
 
-/* [수정] iframe 스타일 */
+/* iframe 스타일 */
 .iframe-wrapper {
   width: 100%;
   overflow: hidden;
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
+  padding: 4px;
 }
 
 .summary-iframe {
@@ -311,5 +426,14 @@ onMounted(() => {
   .hero-content { flex-direction: column-reverse; align-items: stretch; }
   .hero-image img { width: 100%; height: auto; }
   .layout-container { grid-template-columns: 1fr; }
+}
+
+/* AI 요약 및 강좌 소개 컨텐츠 스타일 */
+.ai-content {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #374151;
+  margin: 0;
+  white-space: pre-line;
 }
 </style>
