@@ -263,6 +263,76 @@ class RealisticReviewGenerator:
 
         return full_review
 
+class KoreanContentGenerator:
+    """한글 게시글/댓글 생성기"""
+
+    # 게시글 주제 템플릿
+    POST_TOPICS = [
+        "강의 추천", "질문", "후기", "스터디 모집", "정보 공유",
+        "취업 준비", "프로젝트 공유", "공부 방법", "진로 상담", "자료 요청"
+    ]
+
+    # 제목 템플릿
+    TITLE_TEMPLATES = [
+        "{topic} 관련해서 질문 있습니다",
+        "{topic} 어떻게 하시나요?",
+        "{topic} 도움 부탁드립니다",
+        "{topic} 경험 공유합니다",
+        "{topic} 궁금한 점 있어요",
+        "초보자 {topic} 질문드려요",
+        "{topic} 추천 부탁드립니다",
+        "{topic}에 대한 의견 나눠요",
+        "{topic} 시작하려는데 조언 구합니다",
+        "{topic} 같이 하실 분 계신가요?",
+    ]
+
+    # 본문 문장 풀
+    CONTENT_SENTENCES = [
+        "안녕하세요. 처음 글 올립니다.",
+        "도움이 필요해서 글 남깁니다.",
+        "이 분야를 공부한 지 얼마 안 됐는데요.",
+        "여러분의 의견이 궁금합니다.",
+        "경험 있으신 분들께 조언 구합니다.",
+        "관련 자료를 찾다가 궁금한 점이 생겼어요.",
+        "같은 고민을 하시는 분들이 계실까 싶어 공유합니다.",
+        "효율적인 방법을 알고 싶습니다.",
+        "시행착오를 줄이고 싶어서 문의드립니다.",
+        "더 나은 방법이 있을까요?",
+        "실무에서는 어떻게 적용하시나요?",
+        "기초부터 차근차근 배우고 싶은데 추천 부탁드립니다.",
+        "많은 분들의 조언 기다리겠습니다.",
+        "미리 감사드립니다.",
+    ]
+
+    # 댓글 템플릿
+    COMMENT_TEMPLATES = [
+        "좋은 질문이네요!", "저도 궁금했던 부분입니다.", "도움이 되셨으면 좋겠어요.",
+        "제 경험상 이렇게 하면 될 것 같아요.", "감사합니다! 참고할게요.",
+        "좋은 정보 감사합니다.", "저도 비슷한 경험이 있어요.",
+        "한번 시도해보시는 건 어떨까요?", "공감합니다!", "응원합니다!",
+        "같이 공부하면 좋을 것 같네요.", "저도 관심 있습니다.",
+        "유익한 글이네요.", "많이 배워갑니다.", "화이팅하세요!",
+    ]
+
+    @classmethod
+    def generate_post_title(cls):
+        """게시글 제목 생성"""
+        topic = random.choice(cls.POST_TOPICS)
+        template = random.choice(cls.TITLE_TEMPLATES)
+        return template.format(topic=topic)
+
+    @classmethod
+    def generate_post_content(cls):
+        """게시글 본문 생성"""
+        num_sentences = random.randint(3, 6)
+        sentences = random.sample(cls.CONTENT_SENTENCES, min(num_sentences, len(cls.CONTENT_SENTENCES)))
+        return "\n\n".join(sentences)
+
+    @classmethod
+    def generate_comment(cls):
+        """댓글 내용 생성"""
+        return random.choice(cls.COMMENT_TEMPLATES)
+
 SEED_CONFIG = {
     'USER': {
         'ACTIVE_RATE': 0.95,       # 활성 유저 비율
@@ -272,34 +342,29 @@ SEED_CONFIG = {
         'VERIFY_SAMPLE_RATE': 0.3, # 미인증 유저 중 인증 시도 데이터 생성 비율
     },
     'COMMUNITY': {
-        'POST': {
-            'DEVIATION': 2,        # 게시글 수 표준편차
-            'DEVIATION_MULTIPLIER': 0.6,         # 기존 avg_posts_per_user * 0.6 구조였던 값
-            'MIN_POSTS_PER_USER': 0,             # 기존 max(0, ...)
-            'MAX_MULTIPLIER': 3,                 # 기존 avg_posts_per_user * 3
-            'TITLE_WORDS_RANGE': (4, 12),        # 기존 random.randint(4, 12)
-            'CONTENT_PARAGRAPHS_RANGE': (2, 6),  # 기존 random.randint(2, 6)
+        'BOARD': {
+            'MIN_POSTS_PER_BOARD': 1,     # 게시판당 최소 게시글 수
+            'MAX_POSTS_PER_BOARD': 20,    # 게시판당 최대 게시글 수
         },
-        'POST_UPDATE_RATE': 0.3,   # 게시글 수정 비율
+        'POST_UPDATE_RATE': 0.2,   # 게시글 수정 비율
         'COMMENT': {
-            'AVG_PER_POST': 8,     # 게시글 당 평균 댓글 수
-            'DEVIATION': 4,        # 표준편차
-            'MIN': 0, 'MAX': 20,
-            'UPDATE_RATE': 0.15,   # 댓글 수정 비율
-            'CONTENT_WORDS_RANGE': (5, 25) # 댓글 내용 단어 수 범위
+            'AVG_PER_POST': 2,     # 게시글 당 평균 댓글 수
+            'DEVIATION': 2,        # 표준편차
+            'MIN': 0, 'MAX': 8,
+            'UPDATE_RATE': 0.1,    # 댓글 수정 비율
         },
         'REPLY': {
-            'TARGET_RATIO': 0.4,   # 전체 댓글 중 대댓글이 달릴 비율
-            'COUNT_RANGE': (1, 3), # 대댓글 달릴 시 개수 범위
+            'TARGET_RATIO': 0.2,   # 전체 댓글 중 대댓글이 달릴 비율
+            'COUNT_RANGE': (1, 2), # 대댓글 달릴 시 개수 범위
         },
         'LIKE': {
-            'RATIO_MIN': 0.2,      # 유저 중 최소 20%가 좋아요
-            'RATIO_MAX': 0.4,      # 유저 중 최대 40%가 좋아요
+            'RATIO_MIN': 0.005,    # 유저 중 최소 0.5%가 좋아요
+            'RATIO_MAX': 0.015,    # 유저 중 최대 1.5%가 좋아요
         },
         'SCRAP': {
-            'AVG_PER_USER': 8,     # 유저당 평균 스크랩 수
-            'DEVIATION': 5,        # 표준편차
-            'MAX': 25,             # 최대 스크랩 수
+            'AVG_PER_USER': 2,     # 유저당 평균 스크랩 수
+            'DEVIATION': 2,        # 표준편차
+            'MAX': 10,             # 최대 스크랩 수
         }
     },
     'COURSE': {
@@ -621,32 +686,32 @@ class Command(BaseCommand):
 
     # 3.1 POST 생성
     def create_posts(self, users, boards, avg_posts_per_user):
-        """POST 생성 (왕성하게!)"""
-        self.stdout.write(f'게시글 생성 중 (유저당 평균 {avg_posts_per_user}개)...')
+        """POST 생성 (게시판당 1~20개)"""
+        self.stdout.write(f'게시글 생성 중 (게시판당 1~20개)...')
 
         posts = []
         active_users = [u for u in users if u.is_active]
         base_date = self.current_time - timedelta(days=POST_ACTIVITY_LOOKBACK_DAYS)
 
-        for user in active_users:
-            # 정규분포로 게시글 수 결정 (일부는 많이, 일부는 적게)
-            num_posts = max(SEED_CONFIG['COMMUNITY']['POST']['MIN_POSTS_PER_USER'], gaussian_int(
-                avg_posts_per_user,
-                SEED_CONFIG['COMMUNITY']['POST']['DEVIATION'],
-                SEED_CONFIG['COMMUNITY']['POST']['MIN_POSTS_PER_USER'],
-                avg_posts_per_user * SEED_CONFIG['COMMUNITY']['POST']['MAX_MULTIPLIER']
-            ))
+        # 게시판별로 게시글 생성
+        for board in boards:
+            num_posts = random.randint(
+                SEED_CONFIG['COMMUNITY']['BOARD']['MIN_POSTS_PER_BOARD'],
+                SEED_CONFIG['COMMUNITY']['BOARD']['MAX_POSTS_PER_BOARD']
+            )
 
             for _ in range(num_posts):
+                # 랜덤 유저 선택
+                author = random.choice(active_users)
+
                 created_at = random_datetime_between(
-                    max(base_date, user.date_joined),
+                    max(base_date, author.date_joined),
                     self.current_time
                 )
 
-                # 30% 확률로 게시글 수정
+                # 20% 확률로 게시글 수정
                 updated_at = created_at
                 if random.random() < SEED_CONFIG['COMMUNITY']['POST_UPDATE_RATE']:
-                    # 방어: created_at이 current_time과 같거나 이후면 그대로 사용
                     if created_at >= self.current_time:
                         updated_at = created_at
                     else:
@@ -656,34 +721,38 @@ class Command(BaseCommand):
                         )
 
                 post = Post(
-                    author=user,
-                    board=random.choice(boards),
-                    title=fake.sentence(nb_words=random.randint(*SEED_CONFIG['COMMUNITY']['POST']['TITLE_WORDS_RANGE'])).rstrip('.'),
-                    content='\n\n'.join(fake.paragraphs(nb=random.randint(*SEED_CONFIG['COMMUNITY']['POST']['CONTENT_PARAGRAPHS_RANGE']))),
+                    author=author,
+                    board=board,
+                    title=KoreanContentGenerator.generate_post_title(),
+                    content=KoreanContentGenerator.generate_post_content(),
                     created_at=created_at,
                     updated_at=updated_at,
                 )
                 posts.append(post)
 
         Post.objects.bulk_create(posts, batch_size=BATCH_SIZE)
-        self.stdout.write(self.style.SUCCESS(f'✓ {len(posts)}개 게시글 생성'))
+        self.stdout.write(self.style.SUCCESS(f'✓ {len(posts)}개 게시글 생성 (게시판 {len(boards)}개)'))
 
         return list(Post.objects.all().order_by('-id')[:len(posts)])
 
     # 3.2 COMMENT 및 대댓글 생성
     def create_comments(self, users, posts):
-        """COMMENT 생성 (일반 댓글 + 대댓글 왕성하게!)"""
+        """COMMENT 생성 (일반 댓글 + 대댓글)"""
         self.stdout.write('댓글 및 대댓글 생성 중...')
 
         comments = []
 
         for post in posts:
-            # 게시글당 댓글 수 (0~20개, 평균 8개)
-            num_comments = gaussian_int(SEED_CONFIG['COMMUNITY']['COMMENT']['AVG_PER_POST'], SEED_CONFIG['COMMUNITY']['COMMENT']['DEVIATION'], SEED_CONFIG['COMMUNITY']['COMMENT']['MIN'], SEED_CONFIG['COMMUNITY']['COMMENT']['MAX'])
+            # 게시글당 댓글 수 (0~8개, 평균 2개)
+            num_comments = gaussian_int(
+                SEED_CONFIG['COMMUNITY']['COMMENT']['AVG_PER_POST'],
+                SEED_CONFIG['COMMUNITY']['COMMENT']['DEVIATION'],
+                SEED_CONFIG['COMMUNITY']['COMMENT']['MIN'],
+                SEED_CONFIG['COMMUNITY']['COMMENT']['MAX']
+            )
             post_comments = []
 
             for _ in range(num_comments):
-                # 방어: post.created_at이 current_time과 같거나 이후면 그대로 사용
                 if post.created_at >= self.current_time:
                     created_at = post.created_at
                 else:
@@ -693,8 +762,7 @@ class Command(BaseCommand):
                     )
 
                 updated_at = created_at
-                if random.random() < SEED_CONFIG['COMMUNITY']['COMMENT']['UPDATE_RATE']:  # 15%
-                    # 방어: created_at이 current_time과 같거나 이후면 그대로 사용
+                if random.random() < SEED_CONFIG['COMMUNITY']['COMMENT']['UPDATE_RATE']:  # 10%
                     if created_at >= self.current_time:
                         updated_at = created_at
                     else:
@@ -704,7 +772,7 @@ class Command(BaseCommand):
                     author=random.choice(users),
                     post=post,
                     parent=None,
-                    content=fake.sentence(nb_words=random.randint(*SEED_CONFIG['COMMUNITY']['COMMENT']['CONTENT_WORDS_RANGE'])),
+                    content=KoreanContentGenerator.generate_comment(),
                     created_at=created_at,
                     updated_at=updated_at,
                 )
@@ -714,7 +782,7 @@ class Command(BaseCommand):
                 Comment.objects.bulk_create(post_comments, batch_size=BATCH_SIZE)
                 comments.extend(post_comments)
 
-        # 대댓글 생성 (기존 댓글의 40% - 왕성!)
+        # 대댓글 생성 (기존 댓글의 20%)
         self.stdout.write('대댓글 생성 중...')
         all_comments = list(Comment.objects.filter(parent=None))
         replies = []
@@ -722,10 +790,9 @@ class Command(BaseCommand):
         if all_comments:
             reply_count = int(len(all_comments) * SEED_CONFIG['COMMUNITY']['REPLY']['TARGET_RATIO'])
             for comment in random.sample(all_comments, k=min(reply_count, len(all_comments))):
-                # 각 댓글에 1~3개 대댓글
+                # 각 댓글에 1~2개 대댓글
                 num_replies = random.randint(*SEED_CONFIG['COMMUNITY']['REPLY']['COUNT_RANGE'])
                 for _ in range(num_replies):
-                    # 방어: comment.created_at이 current_time과 같거나 이후면 그대로 사용
                     if comment.created_at >= self.current_time:
                         created_at = comment.created_at
                     else:
@@ -738,7 +805,7 @@ class Command(BaseCommand):
                         author=random.choice(users),
                         post=comment.post,
                         parent=comment,
-                        content=fake.sentence(nb_words=random.randint(*SEED_CONFIG['COMMUNITY']['COMMENT']['CONTENT_WORDS_RANGE'])),
+                        content=KoreanContentGenerator.generate_comment(),
                         created_at=created_at,
                         updated_at=created_at,
                     )

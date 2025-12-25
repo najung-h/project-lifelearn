@@ -12,7 +12,7 @@ class Command(BaseCommand):
         # 1. 설정 및 환경 변수
         GMS_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/embeddings"
         GMS_KEY = os.environ.get("GMS_KEY")
-        BATCH_SIZE = 2  # 요청하신 대로 2로 설정
+        BATCH_SIZE = 2
 
         if not GMS_KEY:
             self.stdout.write(self.style.ERROR("GMS_KEY가 설정되지 않았습니다."))
