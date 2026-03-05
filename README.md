@@ -133,12 +133,12 @@
     <td align="center">
       <img src="https://github.com/srogsrogi.png" width="100px" style="border-radius: 50%;" />
       <br />
-      <b>강한결</b> <br> (역할)
+      <b>강한결</b> <br> FE, ES
     </td>
     <td align="center">
       <img src="https://github.com/najung-h.png" width="100px" style="border-radius: 50%;" />
       <br />
-      <b>나정현</b> <br> (담당)
+      <b>나정현</b> <br> BE
     </td>
   </tr>
 </table>
